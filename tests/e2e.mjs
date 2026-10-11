@@ -249,6 +249,18 @@ try {
   check("editor: elektro warns about the open pin", /R2/.test(warnText) && !/Warning: Warning/.test(warnText), warnText);
   await shot("17-editor-open-pin", true);
 
+  await page.keys(["c"]);
+  check("editor: key 'c' enters place mode for capacitor", await page.eval(`document.querySelector('.ed-pal[data-kind="C"]')?.getAttribute("aria-pressed") === "true"`));
+  await click(await grid(1, 7));
+  ps = await parts();
+  check("editor: capacitor placed via 'c' shortcut", !!ps.C1);
+
+  await page.keys(["v"]);
+  check("editor: key 'v' enters place mode for voltage source", await page.eval(`document.querySelector('.ed-pal[data-kind="V"]')?.getAttribute("aria-pressed") === "true"`));
+  await click(await grid(1, 9));
+  ps = await parts();
+  check("editor: voltage source placed via 'v' shortcut", !!ps.V2);
+
   await page.goto(`${BASE.split("#")[0]}#sim?ex=rc_charge`);
   await page.waitFor(`document.querySelector(".sim-name")?.textContent === "rc_charge.json"`, BOOT_MS);
   await waitResult();

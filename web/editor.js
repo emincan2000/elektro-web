@@ -284,27 +284,33 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
     return b;
   }
 
+  const SHORTCUTS = {
+    R: "R", C: "C", L: "L", V: "V", I: "I", D: "D", Q: "Q", M: "M", U: "U", GND: "G", N: "N",
+  };
+
   // ---------------------------------------------------------------- toolbar
   function buildBar() {
     palette.replaceChildren(...PALETTE.map((kind) => {
+      const sc = SHORTCUTS[kind] ? ` (${SHORTCUTS[kind]})` : "";
+      const title = `${texts.kinds[kind] || kind}${sc}`;
       const b = button(`${iconSvg(kind, modelTypes)}<span>${kind === "N" ? ui.label : kind === "GND" ? "GND" : kind}</span>`,
-        `${texts.kinds[kind] || kind}`, () => {}, "ed-pal");
+        title, () => {}, "ed-pal");
       b.dataset.kind = kind;
       b.addEventListener("pointerdown", (e) => paletteDown(e, kind));
       return b;
     }));
     tools.replaceChildren(
-      modeButton("select", "⬚", ui.edSelect),
-      modeButton("wire", "╱", ui.edWire),
-      modeButton("probe", "◉", ui.edProbe),
+      modeButton("select", "⬚", ui.edSelect, `${ui.edSelect} (S)`),
+      modeButton("wire", "╱", ui.edWire, `${ui.edWire} (W)`),
+      modeButton("probe", "◉", ui.edProbe, `${ui.edProbe} (P)`),
       button("⟳", `${ui.edRotate} (R)`, () => rotateSelected(), "ed-btn ed-rot"),
       button("✕", `${ui.edDelete} (Del)`, () => deleteSelected(), "ed-btn ed-del"),
       button("↶", `${ui.edUndo} (Ctrl+Z)`, () => doUndo(), "ed-btn ed-undo"),
       button("↷", `${ui.edRedo} (Ctrl+Y)`, () => doRedo(), "ed-btn ed-redo"),
       button(ui.edNew, ui.edNew, () => clearAll(), "ed-btn ed-new"));
   }
-  function modeButton(m, icon, title) {
-    const b = button(`${icon}<span>${title}</span>`, title, () => setMode(m), "ed-btn ed-mode");
+  function modeButton(m, icon, label, title = label) {
+    const b = button(`${icon}<span>${label}</span>`, title, () => setMode(m), "ed-btn ed-mode");
     b.dataset.mode = m;
     return b;
   }
@@ -586,7 +592,12 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
 
   // ---------------------------------------------------------------- edits
   function rotateSelected() {
-    if (placing) { placing.rot = (placing.rot + 90) % 360; draw(); return; }
+    if (placing) {
+      placing.rot = (placing.rot + 90) % 360;
+      if (hover) placing.at = anchorFor(placing.kind, placing.rot, hover);
+      draw();
+      return;
+    }
     const c = selected?.ref && findRef(selected.ref);
     if (!c || c.kind === "GND") return;
     begin();
@@ -635,6 +646,21 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
     return c;
   }
 
+  function startPlacing(kind) {
+    const rot = C.DEFAULT_ROT[kind] ?? 0;
+    placing = {
+      kind,
+      rot,
+      at: hover ? anchorFor(kind, rot, hover) : null,
+    };
+    wireFrom = null;
+    selected = null;
+    setMode("place");
+    svg.focus({ preventScroll: true });
+    draw();
+    renderProps();
+  }
+
   // ---------------------------------------------------------------- palette: drag or click
   function paletteDown(e, kind) {
     if (e.button !== 0) return;
@@ -658,9 +684,7 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
       removeEventListener("pointerup", up);
       host.classList.remove("ed-dragging");
       if (!dragging) {               // a click: place it with the next click on the grid
-        placing = { kind, rot };
-        setMode("place");
-        svg.focus({ preventScroll: true });
+        startPlacing(kind);
         return;
       }
       const at = overSvg(ev) ? anchorFor(kind, placing.rot, toGrid(ev)) : null;
@@ -792,17 +816,253 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
     if (mode === "wire" || placing) { e.preventDefault(); wireFrom = null; placing = null; setMode("select"); }
   });
 
-  svg.addEventListener("keydown", (e) => {
-    const k = e.key;
-    if ((e.ctrlKey || e.metaKey) && (k === "z" || k === "Z")) { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
-    if ((e.ctrlKey || e.metaKey) && (k === "y" || k === "Y")) { e.preventDefault(); doRedo(); return; }
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (k === "r" || k === "R") { e.preventDefault(); rotateSelected(); }
-    else if (k === "Delete" || k === "Backspace") { e.preventDefault(); deleteSelected(); }
-    else if (k === "Escape") { wireFrom = null; placing = null; selected = null; setMode("select"); renderProps(); }
-    else if (k === "w" || k === "W") setMode(mode === "wire" ? "select" : "wire");
-    else if (k === "p" || k === "P") setMode(mode === "probe" ? "select" : "probe");
+  wrap.addEventListener("pointerenter", () => {
+    svg.focus({ preventScroll: true });
   });
+
+  svg.addEventListener("wheel", (e) => {
+    if (placing) {
+      e.preventDefault();
+      rotateSelected();
+    }
+  }, { passive: false });
+
+  function isEditorActive() {
+    if (!host.isConnected || host.hidden) return false;
+    if (host.closest("[hidden]")) return false;
+    if (host.offsetParent === null && window.getComputedStyle(host).display === "none") return false;
+    return true;
+  }
+
+  function moveByKeys(dx, dy) {
+    if (placing) {
+      const cur = placing.at || hover || [4, 4];
+      const next = [Math.max(0, cur[0] + dx), Math.max(0, cur[1] + dy)];
+      hover = next;
+      placing.at = anchorFor(placing.kind, placing.rot, next);
+      draw();
+      return;
+    }
+    const c = selected?.ref && findRef(selected.ref);
+    if (c) {
+      begin();
+      const nx = c.x + dx, ny = c.y + dy;
+      const test = { ...c, x: nx, y: ny };
+      C.clampPart(test);
+      C.movePart(circuit, c, test.x, test.y);
+      changed();
+      return;
+    }
+    if (mode === "wire" && wireFrom) {
+      if (!hover) hover = [wireFrom[0], wireFrom[1]];
+      hover = [Math.max(0, hover[0] + dx), Math.max(0, hover[1] + dy)];
+      draw();
+      return;
+    }
+    if (!hover) hover = [4, 4];
+    else hover = [Math.max(0, hover[0] + dx), Math.max(0, hover[1] + dy)];
+    draw();
+  }
+
+  function onKeyDown(e) {
+    if (!isEditorActive()) return;
+
+    const target = e.target;
+    const tag = target?.tagName;
+    if (target?.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+      return;
+    }
+
+    const k = e.key;
+    const code = e.code;
+    const key = k ? k.toLowerCase() : "";
+
+    // Ctrl/Cmd shortcuts
+    if ((e.ctrlKey || e.metaKey) && (key === "z" || code === "KeyZ")) {
+      e.preventDefault();
+      e.shiftKey ? doRedo() : doUndo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (key === "y" || code === "KeyY")) {
+      e.preventDefault();
+      doRedo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (key === "r" || code === "KeyR")) {
+      e.preventDefault();
+      rotateSelected();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (tag === "BUTTON" && (k === "Enter" || k === " ")) return;
+
+    // Component shortcuts
+    if (key === "c" || code === "KeyC") {
+      e.preventDefault();
+      startPlacing("C");
+      return;
+    }
+    if (key === "v" || code === "KeyV") {
+      e.preventDefault();
+      startPlacing("V");
+      return;
+    }
+    if (key === "r" || code === "KeyR") {
+      e.preventDefault();
+      if (placing || selected?.ref) {
+        rotateSelected();
+      } else {
+        startPlacing("R");
+      }
+      return;
+    }
+    if (key === "l" || code === "KeyL") {
+      e.preventDefault();
+      startPlacing("L");
+      return;
+    }
+    if (key === "i" || key === "ı" || code === "KeyI") {
+      e.preventDefault();
+      startPlacing("I");
+      return;
+    }
+    if (key === "d" || code === "KeyD") {
+      e.preventDefault();
+      startPlacing("D");
+      return;
+    }
+    if (key === "q" || code === "KeyQ") {
+      e.preventDefault();
+      startPlacing("Q");
+      return;
+    }
+    if (key === "m" || key === "f" || code === "KeyM" || code === "KeyF") {
+      e.preventDefault();
+      startPlacing("M");
+      return;
+    }
+    if (key === "u" || code === "KeyU") {
+      e.preventDefault();
+      startPlacing("U");
+      return;
+    }
+    if (key === "g" || code === "KeyG") {
+      e.preventDefault();
+      startPlacing("GND");
+      return;
+    }
+    if (key === "n" || code === "KeyN") {
+      e.preventDefault();
+      startPlacing("N");
+      return;
+    }
+
+    // Modes and tools
+    if (key === "w" || code === "KeyW") {
+      e.preventDefault();
+      setMode(mode === "wire" ? "select" : "wire");
+      return;
+    }
+    if (key === "p" || code === "KeyP") {
+      e.preventDefault();
+      setMode(mode === "probe" ? "select" : "probe");
+      return;
+    }
+    if (key === "s" || code === "KeyS") {
+      e.preventDefault();
+      wireFrom = null;
+      placing = null;
+      setMode("select");
+      return;
+    }
+
+    // Space: rotate placing or selected
+    if (k === " " || code === "Space") {
+      if (placing || selected?.ref) {
+        e.preventDefault();
+        rotateSelected();
+        return;
+      }
+    }
+
+    // Delete / Backspace / X
+    if (k === "Delete" || k === "Backspace" || key === "x" || code === "KeyX") {
+      e.preventDefault();
+      deleteSelected();
+      return;
+    }
+
+    // Escape
+    if (k === "Escape") {
+      e.preventDefault();
+      wireFrom = null;
+      placing = null;
+      selected = null;
+      setMode("select");
+      renderProps();
+      return;
+    }
+
+    // Edit value
+    if (key === "e" || code === "KeyE") {
+      if (selected?.ref) {
+        const input = props.querySelector(".ed-value");
+        if (input) {
+          e.preventDefault();
+          input.focus();
+          input.select();
+          return;
+        }
+      }
+    }
+
+    // Enter
+    if (k === "Enter") {
+      if (mode === "place" && placing && placing.at) {
+        e.preventDefault();
+        const at = placing.at, kind = placing.kind, rot = placing.rot;
+        placing = null;
+        place(kind, at, rot);
+        setMode("select");
+        return;
+      }
+      if (mode === "wire" && hover) {
+        e.preventDefault();
+        if (!wireFrom) { wireFrom = hover; draw(); return; }
+        if (samePt(wireFrom, hover)) { wireFrom = null; draw(); return; }
+        begin();
+        C.addWire(circuit, wireFrom, hover);
+        wireFrom = hover;
+        changed();
+        return;
+      }
+      if (selected?.ref) {
+        const input = props.querySelector(".ed-value");
+        if (input) {
+          e.preventDefault();
+          input.focus();
+          input.select();
+          return;
+        }
+      }
+    }
+
+    // Arrow navigation
+    if (k === "ArrowUp" || k === "ArrowDown" || k === "ArrowLeft" || k === "ArrowRight") {
+      e.preventDefault();
+      const step = e.shiftKey ? 4 : 1;
+      const dx = k === "ArrowLeft" ? -step : k === "ArrowRight" ? step : 0;
+      const dy = k === "ArrowUp" ? -step : k === "ArrowDown" ? step : 0;
+      moveByKeys(dx, dy);
+      return;
+    }
+  }
+
+  host._edAbort?.abort();
+  const edAbort = new AbortController();
+  host._edAbort = edAbort;
+  window.addEventListener("keydown", onKeyDown, { signal: edAbort.signal });
 
   buildBar();
   setMode("select");
@@ -845,5 +1105,6 @@ export function createEditor({ host, ui, texts, modelTypes, onChange }) {
       return [s.x, s.y];
     },
     rebuild(nextTexts, nextUi) { texts = nextTexts; ui = nextUi; buildBar(); setMode(mode); renderProps(); },
+    destroy() { host._edAbort?.abort(); },
   };
 }
