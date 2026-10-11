@@ -78,6 +78,7 @@ make test
 | `test-lib` | form ↔ command-line conversion, ANSI → HTML (incl. no HTML injection), SI units, same-origin rule for `?pyodide=` |
 | `test-pyodide` | every example in elektro's help (151) runs inside Pyodide; each one also survives a round trip through the form (example → form → command line) unchanged |
 | `test-native` | the same 151 examples give the **same results as the installed CLI**: identical terminal text; identical JSON (floats within 1e-9, the WASM vs glibc `libm` difference) |
+| `test-live` | the same browser test against the deployed GitHub Pages site |
 | `test-e2e` | real headless Firefox: boot, sidebar, examples, plots, colours, file upload + FFT, validation, error display, shareable links, language switch, dark theme, mobile layout |
 
 ## Credits

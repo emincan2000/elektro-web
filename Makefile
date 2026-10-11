@@ -5,7 +5,7 @@
 
 NODE_WS = node --experimental-websocket
 
-.PHONY: bundle test test-lib test-pyodide test-native test-e2e serve deps
+.PHONY: bundle test test-lib test-pyodide test-native test-e2e test-live serve deps
 
 deps:
 	cd tests && npm install --no-audit --no-fund
@@ -26,6 +26,9 @@ test-native: test-pyodide   # same examples with the installed CLI: results must
 
 test-e2e:                # real headless Firefox
 	cd tests && $(NODE_WS) e2e.mjs
+
+test-live:               # the deployed site, Pyodide from the CDN like real visitors
+	cd tests && E2E_URL=https://emincan2000.github.io/elektro-web/ $(NODE_WS) e2e.mjs
 
 serve:
 	cd tests && node serve.mjs 8765

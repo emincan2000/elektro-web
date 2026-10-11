@@ -4,9 +4,12 @@ import { serve } from "./serve.mjs";
 import { launchFirefox } from "./bidi.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const server = await serve(0);                 // any free port: `make serve` may be running
-const PORT = server.address().port;
-const BASE = `http://127.0.0.1:${PORT}/?pyodide=/pyodide/`;
+// E2E_URL=https://…/ tests a deployed site (Pyodide from the CDN, like real visitors);
+// otherwise a local server with the npm copy of Pyodide on any free port.
+const LIVE = process.env.E2E_URL;
+const server = LIVE ? null : await serve(0);
+const BASE = LIVE || `http://127.0.0.1:${server.address().port}/?pyodide=/pyodide/`;
+const BOOT_MS = LIVE ? 300000 : 120000;
 const SHOTS = new URL("./out/shots/", import.meta.url);
 mkdirSync(SHOTS, { recursive: true });
 
@@ -33,7 +36,7 @@ try {
   await page.goto(BASE);
   await page.eval(`localStorage.setItem("elektro-web-lang", "en") || true`);
   await page.goto(BASE);
-  await page.waitFor(`!document.querySelector("#view").hidden`, 120000);
+  await page.waitFor(`!document.querySelector("#view").hidden`, BOOT_MS);
   const loadMs = Date.now() - t0;
   check("page boots elektro in the browser", true, `${loadMs} ms`);
   await shot("01-home");
@@ -113,8 +116,8 @@ try {
   await shot("06-error");
 
   // deep link (shareable URL) runs automatically
-  await page.goto(`http://127.0.0.1:${PORT}/?pyodide=/pyodide/#ohm?a=${encodeURIComponent("-v 12 -r 4k7")}`);
-  await page.waitFor(`!document.querySelector("#view").hidden`, 120000);
+  await page.goto(`${BASE.split("#")[0]}#ohm?a=${encodeURIComponent("-v 12 -r 4k7")}`);
+  await page.waitFor(`!document.querySelector("#view").hidden`, BOOT_MS);
   await waitResult();
   const ohm = await termText();
   check("shareable URL opens command and runs it", ohm.includes("2.553") || ohm.includes("2.55"), ohm.split("\n").find((l) => /mA/.test(l))?.trim());
@@ -151,7 +154,7 @@ try {
   try { await shot("99-failure"); } catch { /* ignore */ }
 } finally {
   await page.close();
-  server.close();
+  server?.close();
 }
 const failed = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
