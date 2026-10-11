@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>elektro web</title>
+  <meta name="description" content="Electrical & electronics engineering calculations in the browser — the elektro toolkit, running locally via Pyodide.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <button class="icon-btn menu-btn" id="menu-btn" aria-label="Menu" aria-expanded="false">☰</button>
+    <a class="brand" href="#" id="home-link"><span class="bolt" aria-hidden="true">⚡</span> elektro <span class="brand-sub">web</span></a>
+    <div class="top-right">
+      <label class="visually-hidden" for="lang">Language</label>
+      <select id="lang">
+        <option value="tr">Türkçe</option>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="ru">Русский</option>
+      </select>
+      <button class="icon-btn" id="theme-btn" aria-label="Theme">◐</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar" aria-label="Commands">
+      <div class="search-wrap">
+        <input type="search" id="search" autocomplete="off" spellcheck="false">
+      </div>
+      <div id="nav"></div>
+    </nav>
+
+    <main id="main" tabindex="-1">
+      <section id="loading" class="loading" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <ol class="steps" id="steps"></ol>
+        <p class="loading-note" id="loading-note"></p>
+      </section>
+      <section id="view" hidden></section>
+    </main>
+  </div>
+
+  <footer class="foot" id="foot"></footer>
+</body>
+</html>

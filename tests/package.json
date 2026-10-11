@@ -1,0 +1,6 @@
+{
+  "name": "elektro-web-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "pyodide": "0.28.3" }
+}
