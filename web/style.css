@@ -274,6 +274,76 @@ form.card { padding: 18px; }
 .file-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .home-sim { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: var(--accent-bg); }
 
+/* ---------------------------------------------------------------- schematic editor */
+:root { --ed-wire: #3d4450; --ed-grid: #c3c8d0; --ed-bg: #fdfdfe; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ed-wire: #c9d1d9; --ed-grid: #39414c; --ed-bg: #0b0e12; } }
+:root[data-theme="dark"] { --ed-wire: #c9d1d9; --ed-grid: #39414c; --ed-bg: #0b0e12; }
+.sim-head .seg { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg-btn { border: 0; background: var(--panel); padding: 5px 12px; font-size: 13px; cursor: pointer; color: var(--muted); }
+.seg-btn + .seg-btn { border-left: 1px solid var(--line); }
+.seg-btn[aria-selected="true"] { background: var(--accent-bg); color: var(--text); font-weight: 600; }
+.ed { margin-top: 10px; scroll-margin-top: 72px; }
+.ed-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 8px; }
+.ed-palette, .ed-tools { display: flex; flex-wrap: wrap; gap: 4px; }
+.ed-pal, .ed-btn {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 1px; min-width: 44px; padding: 3px 5px 2px;
+  border: 1px solid var(--line); background: var(--panel); border-radius: 7px; cursor: pointer; font-size: 11px; color: var(--text);
+}
+.ed-pal { cursor: grab; touch-action: none; user-select: none; }
+.ed-pal:hover, .ed-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
+.ed-pal[aria-pressed="true"], .ed-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); font-weight: 600; }
+.ed-btn { flex-direction: row; gap: 5px; min-width: 34px; height: 40px; justify-content: center; font-size: 15px; padding: 0 9px; }
+.ed-btn span { font-size: 12.5px; }
+.ed-new { font-size: 12.5px; }
+.ed-icon { width: 34px; height: 22px; display: block; }
+.ed-canvas { border: 1px solid var(--line); border-radius: 8px; background: var(--ed-bg); overflow: hidden; }
+.ed-svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; cursor: crosshair; }
+.ed-svg:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+.ed-svg[data-mode="probe"] { cursor: help; }
+.ed-dragging, .ed-dragging * { cursor: grabbing !important; }
+.ed-svg .grid { stroke: var(--ed-grid); stroke-width: 2.2; stroke-linecap: round; }
+.ed-svg .heads text { font: 9.5px var(--mono); fill: var(--muted); }
+.ed-svg .wire { stroke: var(--ed-wire); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ed-svg .wire.on { stroke: var(--accent); stroke-width: 3.5; }
+.ed-svg .wire.preview { stroke: var(--accent); stroke-dasharray: 5 4; }
+.ed-svg .comp { fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ed-svg .comp .lead, .ed-svg .comp .sign { stroke: var(--ed-wire); }
+.ed-svg .comp .fill { fill: currentColor; stroke: none; }
+.ed-svg .comp text { stroke: none; fill: currentColor; font: 600 11px var(--mono); }
+.ed-svg .comp text .val, .ed-svg .comp text.val { font-weight: 500; fill: var(--muted); }
+.ed-svg .k-part { color: var(--a-cyan); stroke: var(--a-cyan); }
+.ed-svg .k-src { color: var(--a-yellow); stroke: var(--a-yellow); }
+.ed-svg .k-dev { color: var(--a-green); stroke: var(--a-green); }
+.ed-svg .k-lbl { color: var(--a-magenta); stroke: var(--a-magenta); }
+.ed-svg .k-gnd { color: var(--a-green); stroke: var(--a-green); }
+.ed-svg .comp .tag { fill: var(--ed-bg); stroke: currentColor; stroke-width: 1.4; }
+.ed-svg .comp .lbl-text { font: 600 10.5px var(--mono); fill: currentColor; }
+.ed-svg .comp.probed text.ref, .ed-svg .comp.probed .ref { fill: var(--a-magenta); text-decoration: underline; }
+.ed-svg .comp.ghost { opacity: .55; }
+.ed-svg .sel { fill: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.ed-svg .dot { fill: var(--ed-wire); }
+.ed-svg .open { fill: var(--ed-bg); stroke: var(--err); stroke-width: 1.6; }
+.ed-svg .probe { fill: none; stroke: var(--a-magenta); stroke-width: 2.2; }
+.ed-svg .volt { font: 600 10.5px var(--mono); fill: var(--a-magenta); paint-order: stroke; stroke: var(--ed-bg); stroke-width: 3px; }
+.ed-svg .hover { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.ed-icon .comp, .ed-icon { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ed-icon .lead, .ed-icon .sign { stroke: var(--ed-wire); }
+.ed-icon .fill { fill: currentColor; stroke: none; }
+.ed-icon .tag { fill: none; stroke: currentColor; }
+.ed-icon text { fill: currentColor; stroke: none; font: 700 10px var(--mono); }
+.ed-icon.k-part { color: var(--a-cyan); stroke: var(--a-cyan); } .ed-icon.k-src { color: var(--a-yellow); stroke: var(--a-yellow); }
+.ed-icon.k-dev { color: var(--a-green); stroke: var(--a-green); } .ed-icon.k-lbl { color: var(--a-magenta); stroke: var(--a-magenta); }
+.ed-icon.k-gnd { color: var(--a-green); stroke: var(--a-green); }
+.ed-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); padding: 5px 2px 0; min-height: 24px; }
+.ed-where { font-family: var(--mono); color: var(--text); }
+.ed-props { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; min-height: 0; }
+.ed-props:not(:empty) { padding: 10px 12px; background: var(--panel-2); border-radius: 8px; }
+.ed-sel-title { font-weight: 600; font-family: var(--mono); font-size: 13.5px; }
+.ed-props .ed-value { font-family: var(--mono); min-width: 160px; flex: 0 1 260px; }
+.ed-props .ed-value.bad { border-color: var(--err); }
+.ed-props .ed-hint { flex-basis: 100%; font-size: 12.5px; color: var(--muted); order: 9; }
+.result.stale > .card { opacity: .55; }
+
 /* ---------------------------------------------------------------- home */
 .home h1 { font-size: 28px; margin: 0 0 8px; }
 .home .lead { color: var(--muted); max-width: 680px; }

@@ -3,6 +3,8 @@
 import {
   argvToValues, buildArgv, shellJoin, splitWords, ansiToHtml, formatSI, splitKey, humanize,
 } from "./lib.js";
+import { createEditor } from "./editor.js";
+import { emptyCircuit } from "./circuit.js";
 
 // ----------------------------------------------------------------- UI strings
 const UI = {
@@ -18,9 +20,27 @@ const UI = {
     homeLead: "elektro komut satırı aracının web arayüzü. Hesaplar elektro'nun kendi Python koduyla, Pyodide sayesinde tamamen senin tarayıcında yapılır; hiçbir veri bir sunucuya gitmez.",
     commands: "komut", start: "Başlamak için soldan bir komut seç ya da birini dene:",
     on: "açık", off: "kapalı", unchanged: "—", menu: "Menü", theme: "Tema", rawValue: "ham değer",
+    edSelect: "Seç / taşı",
+    edWire: "Kablo",
+    edProbe: "Probe",
+    edRotate: "Döndür",
+    edDelete: "Sil",
+    edUndo: "Geri al",
+    edRedo: "Yinele",
+    edNew: "Yeni devre",
+    label: "Etiket",
+    edHint: "Elemanı paletten sürükle · bir uçtan ya da boş noktadan sürükleyerek kablo çek · elemanı sürükleyerek taşı · çift tık: değer · R döndür · Del sil",
+    edHintPlace: "Yerleştirmek için ızgaraya tıkla · R döndürür · Esc vazgeçer",
+    edHintWire: "Tıkla: kablo başlat / köşe ekle · aynı noktaya tıkla ya da Esc: bitir",
+    edHintProbe: "Düğüme tıkla: gerilim V(…) · elemana tıkla: akım I(…) · tekrar tıklamak kaldırır",
+    edWireSel: "Kablo",
+    editorTab: "Editör",
+    textTab: "elektro görünümü",
+    stale: "Devre değişti — güncel sonuç için yeniden simüle et.",
+    tuiNote: "Kendi devreni çiz: elemanları paletten ızgaraya sürükle. elektro tui'de kaydettiğin .json ya da bir SPICE netlist de açılabilir.",
     simTitle: "Devre simülasyonu",
     simDesc: "DC, geçici (.tran), AC (.ac) ve DC tarama analizi",
-    simLead: "elektro'nun devre çözücüsü: hazır bir örnek seç, kendi devre dosyanı (elektro tui'den kaydedilmiş .json ya da SPICE netlist) aç veya netlist yaz. Değerleri, analizi ve probe'ları değiştirip yeniden çöz.",
+    simLead: "elektro'nun devre çözücüsü: devreni sürükle-bırak ile çiz, hazır bir örnekten başla ya da kendi devre dosyanı (elektro tui'den .json, SPICE netlist) aç. Değerleri, analizi ve probe'ları değiştirip yeniden çöz.",
     openFile: "Dosya aç (.json, .cir…)",
     schematic: "Şema",
     parts: "Elemanlar",
@@ -35,7 +55,6 @@ const UI = {
     applyNetlist: "Netlist'ten devre kur",
     saveCircuit: "Devre dosyası (.json)",
     saveNetlist: "Netlist (.cir)",
-    tuiNote: "Yeni bir devre çizmek için: elektro tui → Devre sekmesi; kaydettiğin .json dosyasını burada aç.",
     noParts: "Devrede eleman yok.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web arayüzünün kaynak kodu", "hesaplar elektro'nun kendi koduyla, Pyodide üzerinde"],
   },
@@ -51,9 +70,27 @@ const UI = {
     homeLead: "A web interface for the elektro command line toolkit. Calculations run elektro's own Python code entirely in your browser via Pyodide; nothing is sent to a server.",
     commands: "commands", start: "Pick a command on the left, or try one of these:",
     on: "on", off: "off", unchanged: "—", menu: "Menu", theme: "Theme", rawValue: "raw value",
+    edSelect: "Select / move",
+    edWire: "Wire",
+    edProbe: "Probe",
+    edRotate: "Rotate",
+    edDelete: "Delete",
+    edUndo: "Undo",
+    edRedo: "Redo",
+    edNew: "New circuit",
+    label: "Label",
+    edHint: "Drag parts from the palette · drag from a pin or an empty point to draw a wire · drag a part to move it · double-click: value · R rotate · Del delete",
+    edHintPlace: "Click on the grid to place · R rotates · Esc cancels",
+    edHintWire: "Click: start a wire / add a corner · click the same point or Esc: finish",
+    edHintProbe: "Click a node: voltage V(…) · click a part: current I(…) · click again to remove",
+    edWireSel: "Wire",
+    editorTab: "Editor",
+    textTab: "elektro view",
+    stale: "The circuit changed — simulate again for up-to-date results.",
+    tuiNote: "Draw your own circuit: drag parts from the palette onto the grid. A .json saved in elektro tui or a SPICE netlist opens too.",
     simTitle: "Circuit simulator",
     simDesc: "DC, transient (.tran), AC (.ac) and DC sweep analysis",
-    simLead: "elektro's circuit solver: pick a ready-made example, open your own circuit file (a .json saved from elektro tui, or a SPICE netlist) or type a netlist. Change values, the analysis and probes, then solve again.",
+    simLead: "elektro's circuit solver: draw your circuit with drag and drop, start from a ready-made example or open your own circuit file (a .json from elektro tui, a SPICE netlist). Change values, the analysis and probes, then solve again.",
     openFile: "Open file (.json, .cir…)",
     schematic: "Schematic",
     parts: "Components",
@@ -68,7 +105,6 @@ const UI = {
     applyNetlist: "Build circuit from netlist",
     saveCircuit: "Circuit file (.json)",
     saveNetlist: "Netlist (.cir)",
-    tuiNote: "To draw a new circuit: elektro tui → Circuit tab; then open the saved .json here.",
     noParts: "The circuit has no components.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web UI source", "calculations by elektro's own code, on Pyodide"],
   },
@@ -84,9 +120,27 @@ const UI = {
     homeLead: "Eine Weboberfläche für das Kommandozeilenwerkzeug elektro. Gerechnet wird mit elektros eigenem Python-Code, vollständig im Browser über Pyodide; nichts wird an einen Server gesendet.",
     commands: "Befehle", start: "Wähle links einen Befehl oder probiere einen davon:",
     on: "an", off: "aus", unchanged: "—", menu: "Menü", theme: "Design", rawValue: "Rohwert",
+    edSelect: "Auswählen / verschieben",
+    edWire: "Leitung",
+    edProbe: "Messpunkt",
+    edRotate: "Drehen",
+    edDelete: "Löschen",
+    edUndo: "Rückgängig",
+    edRedo: "Wiederholen",
+    edNew: "Neue Schaltung",
+    label: "Label",
+    edHint: "Bauteile aus der Palette ziehen · von einem Pin oder freien Punkt ziehen: Leitung · Bauteil ziehen: verschieben · Doppelklick: Wert · R drehen · Entf löschen",
+    edHintPlace: "Zum Platzieren ins Raster klicken · R dreht · Esc bricht ab",
+    edHintWire: "Klick: Leitung beginnen / Ecke setzen · gleicher Punkt oder Esc: beenden",
+    edHintProbe: "Knoten anklicken: Spannung V(…) · Bauteil anklicken: Strom I(…) · erneut klicken entfernt",
+    edWireSel: "Leitung",
+    editorTab: "Editor",
+    textTab: "elektro-Ansicht",
+    stale: "Die Schaltung wurde geändert — für aktuelle Ergebnisse erneut simulieren.",
+    tuiNote: "Eigene Schaltung zeichnen: Bauteile aus der Palette ins Raster ziehen. Eine in elektro tui gespeicherte .json oder eine SPICE-Netzliste lässt sich ebenfalls öffnen.",
     simTitle: "Schaltungssimulation",
     simDesc: "DC-, Transienten- (.tran), AC- (.ac) und DC-Sweep-Analyse",
-    simLead: "Der Schaltungslöser von elektro: Wähle ein fertiges Beispiel, öffne eine eigene Schaltungsdatei (eine mit elektro tui gespeicherte .json oder eine SPICE-Netzliste) oder schreibe eine Netzliste. Werte, Analyse und Messpunkte ändern und neu lösen.",
+    simLead: "Der Schaltungslöser von elektro: Zeichne deine Schaltung per Drag-and-drop, starte mit einem fertigen Beispiel oder öffne eine eigene Schaltungsdatei (.json aus elektro tui, SPICE-Netzliste). Werte, Analyse und Messpunkte ändern und neu lösen.",
     openFile: "Datei öffnen (.json, .cir…)",
     schematic: "Schaltplan",
     parts: "Bauteile",
@@ -101,7 +155,6 @@ const UI = {
     applyNetlist: "Schaltung aus Netzliste erstellen",
     saveCircuit: "Schaltungsdatei (.json)",
     saveNetlist: "Netzliste (.cir)",
-    tuiNote: "Neue Schaltung zeichnen: elektro tui → Reiter „Schaltung“; die gespeicherte .json dann hier öffnen.",
     noParts: "Die Schaltung hat keine Bauteile.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "Quellcode der Weboberfläche", "Berechnungen mit elektros eigenem Code, auf Pyodide"],
   },
@@ -117,9 +170,27 @@ const UI = {
     homeLead: "Веб-интерфейс для консольного инструмента elektro. Расчёты выполняет собственный Python-код elektro прямо в браузере через Pyodide; ничего не отправляется на сервер.",
     commands: "команд", start: "Выберите команду слева или попробуйте одну из этих:",
     on: "вкл", off: "выкл", unchanged: "—", menu: "Меню", theme: "Тема", rawValue: "исходное значение",
+    edSelect: "Выбор / перемещение",
+    edWire: "Провод",
+    edProbe: "Пробник",
+    edRotate: "Повернуть",
+    edDelete: "Удалить",
+    edUndo: "Отменить",
+    edRedo: "Повторить",
+    edNew: "Новая схема",
+    label: "Метка",
+    edHint: "Перетащите элементы из палитры · тяните от вывода или пустой точки — провод · тяните элемент — перемещение · двойной щелчок: значение · R поворот · Del удалить",
+    edHintPlace: "Щёлкните по сетке, чтобы разместить · R поворачивает · Esc отмена",
+    edHintWire: "Щелчок: начать провод / добавить угол · та же точка или Esc: закончить",
+    edHintProbe: "Щелчок по узлу: напряжение V(…) · по элементу: ток I(…) · повторный щелчок удаляет",
+    edWireSel: "Провод",
+    editorTab: "Редактор",
+    textTab: "вид elektro",
+    stale: "Схема изменилась — запустите моделирование снова для актуальных результатов.",
+    tuiNote: "Нарисуйте свою схему: перетащите элементы из палитры на сетку. Также можно открыть .json из elektro tui или SPICE-нетлист.",
     simTitle: "Моделирование схем",
     simDesc: "Анализ DC, переходный (.tran), AC (.ac) и DC-развёртка",
-    simLead: "Решатель схем elektro: выберите готовый пример, откройте свой файл схемы (.json, сохранённый в elektro tui, или SPICE-нетлист) или напишите нетлист. Меняйте значения, анализ и пробники и решайте заново.",
+    simLead: "Решатель схем elektro: нарисуйте схему перетаскиванием, начните с готового примера или откройте свой файл схемы (.json из elektro tui, SPICE-нетлист). Меняйте значения, анализ и пробники и решайте заново.",
     openFile: "Открыть файл (.json, .cir…)",
     schematic: "Схема",
     parts: "Компоненты",
@@ -134,7 +205,6 @@ const UI = {
     applyNetlist: "Собрать схему из нетлиста",
     saveCircuit: "Файл схемы (.json)",
     saveNetlist: "Нетлист (.cir)",
-    tuiNote: "Чтобы нарисовать новую схему: elektro tui → вкладка «Схема»; затем откройте сохранённый .json здесь.",
     noParts: "В схеме нет компонентов.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "исходный код веб-интерфейса", "расчёты — собственный код elektro на Pyodide"],
   },
@@ -177,6 +247,8 @@ let page = "home";           // "home" | "cmd" | "sim"
 let simInfo = null;          // example circuits + elektro's own texts for the simulator page
 let sim = null;              // loaded circuit: { name, circuit, schematic, spice, notes, example, pristine }
 let simResult = null;
+let editor = null;           // drag-and-drop schematic editor (editor.js) on the simulator page
+let simView = "editor";      // "editor" | "text" (elektro's own terminal drawing)
 
 function pickLang() {
   const saved = store.get("elektro-web-lang");
@@ -536,7 +608,7 @@ function renderResult(r, { values: withValues = true } = {}) {
   const box = $("#result");
   if (!box) return;
   const msgs = [];
-  if (r.stderr) msgs.push(el("div", { class: `msg ${r.ok ? "warn" : "err"}`, text: `${r.ok ? t.warning : t.error}: ${r.stderr.replace(/^(Error|Hata|Fehler|Ошибка):\s*/i, "")}` }));
+  if (r.stderr) msgs.push(el("div", { class: `msg ${r.ok ? "warn" : "err"}`, text: `${r.ok ? t.warning : t.error}: ${r.stderr.replace(/^(Error|Hata|Fehler|Ошибка|Warning|Uyarı|Warnung|Предупреждение):\s*/i, "")}` }));
   if (!r.ok && !r.text) { box.replaceChildren(el("div", { class: "result" }, msgs)); return; }
 
   const plots = (r.files || []).map((f) => {
@@ -679,7 +751,9 @@ async function openSim(load = null, autorun = false) {
 async function simLoad({ source, value, name }) {
   let r;
   try {
-    r = await call("simLoad", source, value, name);
+    r = source === "new"
+      ? { ok: true, name: "circuit", circuit: emptyCircuit(), schematic: "", spice: "", notes: [] }
+      : await call("simLoad", source, value, name);
   } catch (err) {
     r = { ok: false, stderr: String(err.message || err) };
   }
@@ -711,15 +785,6 @@ function renderSim() {
     if (!g) groups.push(g = { title: ex.category_title, items: [] });
     g.items.push(ex);
   }
-  const parts = sim.circuit.components.map((c, i) => ({ c, i })).filter(({ c }) => c.kind in x.kinds);
-  const part = ({ c, i }) => el("tr", { "data-ref": c.ref },
-    el("th", { scope: "row", text: c.ref }),
-    el("td", { class: "kind", text: x.kinds[c.kind] }),
-    el("td", {}, el("input", {
-      type: "text", value: c.value, spellcheck: "false", autocomplete: "off", "aria-label": `${c.ref} ${t.value}`,
-      title: x.hints[c.kind], placeholder: x.hints[c.kind],
-      oninput: (e) => { sim.circuit.components[i].value = e.target.value; e.target.closest("tr").classList.remove("invalid"); simChanged(); },
-    })));
   const view = $("#view");
   setKids(view,
     el("div", { class: "crumb", text: "elektro sim · elektro examples" }),
@@ -745,19 +810,23 @@ function renderSim() {
           if (await simLoad({ source: "file", value: path })) simRun();
         },
       })),
+      el("button", { class: "small-btn", type: "button", id: "sim-new", text: `+ ${t.edNew}`,
+        onclick: () => simLoad({ source: "new" }).then(() => { simView = "editor"; showSimView(); }) }),
       el("span", { class: "hint", text: t.tuiNote })),
     sim.notes.length > 0 && el("div", { class: "msg warn", text: sim.notes.join("\n") }),
     el("form", { class: "card sim-card", id: "sim-form", onsubmit: (e) => { e.preventDefault(); simRun(); } },
       el("div", { class: "sim-head" },
         el("h2", { text: t.schematic }),
-        el("code", { class: "sim-name", text: `${sim.name}.json` })),
+        el("code", { class: "sim-name", text: `${sim.name}.json` }),
+        el("div", { class: "seg", role: "tablist" },
+          [["editor", t.editorTab], ["text", t.textTab]].map(([k, label]) => el("button", {
+            type: "button", role: "tab", class: "seg-btn", "data-view": k, text: label, "aria-selected": String(simView === k),
+            onclick: () => { simView = k; showSimView(); },
+          })))),
+      el("div", { id: "sim-editor" }),
       el("pre", { class: "term schematic", id: "sim-schematic" }),
       el("h2", { text: t.parts }),
-      parts.length
-        ? el("div", { class: "values-wrap" }, el("table", { class: "values parts" },
-          el("thead", {}, el("tr", {}, el("th", { text: t.ref }), el("th", { text: t.kind }), el("th", { text: t.value }))),
-          el("tbody", {}, parts.map(part))))
-        : el("p", { class: "no-params", text: t.noParts }),
+      el("div", { id: "sim-parts" }),
       el("div", { class: "fields sim-fields" },
         el("div", { class: "field" },
           el("label", { for: "sim-analysis" }, x.analysis, el("span", { class: "opt", text: "-a" })),
@@ -772,7 +841,7 @@ function renderSim() {
           el("label", { for: "sim-probes" }, x.probes, el("span", { class: "opt", text: "-p" })),
           el("input", {
             id: "sim-probes", type: "text", value: sim.circuit.probes.join(" "), spellcheck: "false", autocomplete: "off",
-            oninput: (e) => { sim.circuit.probes = e.target.value.split(/\s+/).filter(Boolean); simChanged(); },
+            oninput: (e) => { sim.circuit.probes = e.target.value.split(/\s+/).filter(Boolean); editor?.redraw(); simChanged(); },
           }),
           el("div", { class: "hint", text: `${x.probe_hint.replace(/^[^:]*:\s*/, "")} (${t.words})` }))),
       el("div", { class: "cli" },
@@ -800,7 +869,68 @@ function renderSim() {
     el("div", { id: "result" }));
   $("#sim-schematic").innerHTML = ansiToHtml(sim.schematic);
   $("#sim-netlist").value = sim.spice;
+  editor = createEditor({
+    host: $("#sim-editor"), ui: t, texts: x, modelTypes: simInfo.model_types,
+    onChange: (what) => {
+      if (what === "new") {
+        sim.name = "circuit";
+        sim.example = null;
+        $(".sim-name").textContent = "circuit.json";
+        document.querySelectorAll(".chip[data-example]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+      }
+      renderParts();
+      const probes = $("#sim-probes");
+      if (probes && document.activeElement !== probes) probes.value = sim.circuit.probes.join(" ");
+      markStale();
+      simChanged();
+    },
+  });
+  editor.load(sim.circuit);
+  if (simResult?.node_voltages) editor.setOverlay(simResult.node_voltages, simResult.net_points);
+  renderParts();
+  showSimView();
   updateSimCli();
+}
+
+function showSimView() {
+  document.querySelectorAll(".seg-btn").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === simView)));
+  $("#sim-editor").hidden = simView !== "editor";
+  $("#sim-schematic").hidden = simView !== "text";
+}
+
+/** Value table of the parts (kept in step with the drawing). */
+function renderParts() {
+  const t = T(), x = simInfo.texts;
+  const host = $("#sim-parts");
+  if (!host) return;
+  const parts = sim.circuit.components.map((c, i) => ({ c, i })).filter(({ c }) => c.kind in x.hints);
+  const row = ({ c, i }) => el("tr", { "data-ref": c.ref },
+    el("th", { scope: "row", text: c.ref }),
+    el("td", { class: "kind", text: x.kinds[c.kind] }),
+    el("td", {}, el("input", {
+      type: "text", value: c.value, spellcheck: "false", autocomplete: "off", "aria-label": `${c.ref} ${t.value}`,
+      title: x.hints[c.kind], placeholder: x.hints[c.kind],
+      oninput: (e) => {
+        sim.circuit.components[i].value = e.target.value;
+        e.target.closest("tr").classList.remove("invalid");
+        editor?.redraw();
+        markStale();
+        simChanged();
+      },
+    })));
+  setKids(host, parts.length
+    ? el("div", { class: "values-wrap" }, el("table", { class: "values parts" },
+      el("thead", {}, el("tr", {}, el("th", { text: t.ref }), el("th", { text: t.kind }), el("th", { text: t.value }))),
+      el("tbody", {}, parts.map(row))))
+    : el("p", { class: "no-params", text: t.noParts }));
+}
+
+/** Results shown below belong to the circuit before the last edit. */
+function markStale() {
+  const res = $("#result .result");
+  if (!res || res.classList.contains("stale")) return;
+  res.classList.add("stale");
+  res.prepend(el("div", { class: "msg warn stale-note", text: T().stale }));
 }
 
 function updateSimCli() {
@@ -842,6 +972,7 @@ async function simRun() {
     $("#sim-schematic").innerHTML = ansiToHtml(sim.schematic);
     $("#sim-netlist").value = sim.spice;
   }
+  editor?.setOverlay(simResult.node_voltages || null, simResult.net_points || null);
   renderSimResult();
 }
 

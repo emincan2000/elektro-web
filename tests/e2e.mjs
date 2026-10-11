@@ -174,6 +174,81 @@ try {
   await waitResult();
   check("uploaded SPICE file opens and solves", /3\.333 V/.test(await termText()), (await termText()).split("\n").slice(0, 4).join(" | "));
 
+  // ---- drag-and-drop editor: draw a divider from scratch with real mouse input
+  const grid = (x, y) => page.eval(`(() => { const s = document.querySelector(".ed-svg"); const p = s.createSVGPoint();
+    const d = s.dataset; p.x = +d.padL + ${x} * d.u; p.y = +d.padT + ${y} * d.u; const r = p.matrixTransform(s.getScreenCTM()); return [r.x, r.y]; })()`);
+  const pal = (kind) => page.eval(`(() => { const r = document.querySelector('.ed-pal[data-kind="${kind}"]').getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; })()`);
+  const move = ([x, y]) => ({ type: "pointerMove", x: Math.round(x), y: Math.round(y), duration: 30 });
+  const drag = async (a, b, type = "mouse") => {
+    const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    await page.pointer([move(a), { type: "pointerDown", button: 0 }, move(mid), move(b), { type: "pause", duration: 40 }, { type: "pointerUp", button: 0 }], type);
+  };
+  const click = async (a, count = 1) => {
+    const steps = [move(a)];
+    for (let i = 0; i < count; i++) steps.push({ type: "pointerDown", button: 0 }, { type: "pointerUp", button: 0 });
+    await page.pointer(steps);
+  };
+  const drawn = () => page.eval(`(() => { const h = new URLSearchParams(location.hash.split("?")[1] || "").get("c");
+    if (!h) return null; const b = atob(h.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, (ch) => ch.charCodeAt(0)))); })()`);
+  const parts = async () => Object.fromEntries(((await drawn())?.components || []).map((c) => [c.ref, [c.x, c.y, c.rot, c.value]]));
+  const simulate = async () => { await page.eval(`document.querySelector("#run-btn").click() || true`); await waitResult(); };
+
+  await page.eval(`(() => { document.querySelector("#sim-new").click(); return true; })()`);
+  await page.waitFor(`document.querySelector(".sim-name")?.textContent === "circuit.json" && !!document.querySelector(".ed-svg")`, 10000);
+  await page.eval(`(() => { document.querySelector("#sim-editor").scrollIntoView({ block: "start" }); return true; })()`);
+  await drag(await pal("V"), await grid(3, 3));
+  await drag(await pal("R"), await grid(4, 2));
+  await click(await pal("R"));                      // click the palette: place mode
+  await page.keys(["r"]);                            // rotate before placing
+  await click(await grid(6, 3));
+  await drag(await grid(3, 4), await grid(6, 4));    // wire between two pins
+  await drag(await pal("GND"), await grid(3, 4));
+  await drag(await pal("N"), await grid(6, 2));
+  let ps = await parts();
+  check("editor: parts dragged from the palette land on the grid", JSON.stringify(ps) === JSON.stringify({
+    V1: [3, 2, 90, "5"], R1: [3, 2, 0, "1k"], R2: [6, 2, 90, "1k"], GND: [3, 4, 0, ""], LBL1: [6, 2, 0, "OUT"] }), JSON.stringify(ps));
+  check("editor: wire drawn by dragging from pin to pin", JSON.stringify((await drawn()).wires) === "[[3,4,6,4]]", JSON.stringify((await drawn()).wires));
+  await click(await grid(6, 3), 2);                  // double click R2: edit its value
+  await page.waitFor(`document.activeElement?.id === "ed-value"`, 5000);
+  await page.keys(["4", "k", "7", ""]);
+  await simulate();
+  check("editor: drawn circuit is solved by elektro (5 V · 4k7/5k7 = 4.123 V)", /OUT\s+4\.123 V/.test(await termText()), (await termText()).split("\n").find((l) => /OUT/.test(l)));
+  const volts = await page.eval(`[...document.querySelectorAll(".ed-svg .volt")].map((t) => t.textContent).join(" ")`);
+  check("editor: solved node voltages drawn on the schematic", volts.includes("4.123V") && volts.includes("5V"), volts);
+  await shot("15-editor-drawn", true);
+
+  await drag(await grid(6, 3), await grid(9, 3));     // move R2: its wires and contacts follow
+  ps = await parts();
+  check("editor: dragging a part moves it", JSON.stringify(ps.R2) === JSON.stringify([9, 2, 90, "4k7"]), JSON.stringify(ps.R2));
+  const stale = await page.eval(`!!document.querySelector("#result .result.stale")`);
+  check("editor: old result is marked stale after an edit", stale);
+  await simulate();
+  check("editor: moved part stays connected (still 4.123 V)", /OUT\s+4\.123 V/.test(await termText()), (await termText()).split("\n").find((l) => /OUT|Error|Hata/.test(l)));
+  await shot("16-editor-moved", true);
+  await page.eval(`document.querySelector(".ed-svg").focus() || true`);
+  await page.keys([["", "z"]]);                 // Ctrl+Z
+  check("editor: Ctrl+Z undoes the move", JSON.stringify((await parts()).R2) === JSON.stringify([6, 2, 90, "4k7"]));
+
+  await page.eval(`document.querySelector('.ed-mode[data-mode="probe"]').click() || true`);
+  await click(await grid(4, 2));                     // R1's body: current probe
+  await click(await grid(6, 4));                     // a node: voltage probe
+  const probes = (await drawn()).probes;
+  check("editor: probe tool adds I(R1) and V(G5)", JSON.stringify(probes) === '["I(R1)","V(G5)"]', JSON.stringify(probes));
+  await simulate();
+  check("editor: probes are measured by elektro", /I\(R1\)\s+877\.2 µA/.test(await termText()), (await termText()).split("\n").filter((l) => /I\(R1\)|V\(G5\)/.test(l)).join(" | "));
+
+  await page.keys([""]);                        // Esc: back to select
+  await click(await grid(5, 4));                     // the bottom wire
+  await page.keys([""]);                        // Delete
+  check("editor: selected wire deleted with the Delete key", (await drawn()).wires.length === 0, JSON.stringify((await drawn()).wires));
+  const openPins = await page.eval(`document.querySelectorAll(".ed-svg circle.open").length`);
+  check("editor: unconnected pin is marked", openPins >= 1, `${openPins} open pins`);
+  await simulate();
+  const warnText = await page.eval(`document.querySelector("#result .msg.warn")?.textContent ?? ""`);
+  check("editor: elektro warns about the open pin", /R2/.test(warnText) && !/Warning: Warning/.test(warnText), warnText);
+  await shot("17-editor-open-pin", true);
+
   await page.goto(`${BASE.split("#")[0]}#sim?ex=rc_charge`);
   await page.waitFor(`document.querySelector(".sim-name")?.textContent === "rc_charge.json"`, BOOT_MS);
   await waitResult();
@@ -222,6 +297,14 @@ try {
   await new Promise((r) => setTimeout(r, 300));
   const simOverflow = await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`);
   check("mobile: simulator page fits (wide schematic scrolls inside its box)", !simOverflow);
+  await page.eval(`(() => { document.querySelector(".ed-canvas").scrollIntoView({ block: "center" }); return true; })()`);
+  await new Promise((r) => setTimeout(r, 300));
+  const before = (await drawn())?.components.length ?? (await page.eval(`document.querySelectorAll(".ed-svg .comp").length`));
+  await page.eval(`(() => { document.querySelector(".ed-palette").scrollIntoView({ block: "start" }); scrollBy(0, -80); return true; })()`);
+  await new Promise((r) => setTimeout(r, 200));
+  await drag(await pal("R"), await grid(1, 9), "touch");
+  const after = await page.eval(`document.querySelectorAll(".ed-svg .comp:not(.ghost)").length`);
+  check("mobile: a part can be dragged onto the grid with a finger", after === before + 1, `${before} → ${after}`);
   await shot("14-sim-mobile", true);
   await page.viewport(1280, 900);
 } catch (err) {

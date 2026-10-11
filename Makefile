@@ -19,7 +19,7 @@ test-lib:
 	node --test tests/test_lib.mjs
 
 test-pyodide:            # every help example of every command + the circuit simulator, inside Pyodide
-	cd tests && node run_examples.mjs && node run_sim.mjs
+	cd tests && node run_examples.mjs && node run_sim.mjs && node test_circuit.mjs
 
 test-native: test-pyodide   # same examples and circuits with the installed CLI: results must match
 	cd tests && python3 compare_native.py

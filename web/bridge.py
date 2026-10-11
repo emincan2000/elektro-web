@@ -303,7 +303,8 @@ def _sim_texts() -> dict:
     texts = {"title": t("menu.sim"), "examples": t("menu.examples"), "help": _split_help(t("sim.help"))[0],
              "analysis": t("ckt.analysis"), "probes": t("ckt.probes"), "probe_hint": t("ckt.prompt.probe").split("   (")[0],
              "source_hint": t("ckt.prompt.source", ref="V", unit="V").split(" — ", 1)[-1],
-             "kinds": {}, "hints": {}}
+             "kinds": {k: t(f"ckt.kind.{k}") for k in ("GND", "N")}, "hints": {},
+             "label_hint": t("ckt.prompt.label")}
     for k in SIM_KINDS:
         texts["kinds"][k] = t(f"ckt.kind.{k}")
         if k in ("D", "Q", "M", "U"):
@@ -323,7 +324,10 @@ def sim_info() -> str:
     from elektro.i18n import t
     items = [{"name": k, "category": c, "title": t(f"ex.{k}"), "category_title": t(f"ex.cat.{c}")}
              for k, (c, _) in examples.EXAMPLES.items()]
-    return json.dumps({"examples": items, "texts": _sim_texts()}, ensure_ascii=False)
+    from elektro.circuit.devices import LIBRARY
+    # the editor draws NPN/PNP and N/P-channel symbols from the part's model
+    model_types = {name: typ for name, (typ, _) in LIBRARY.items()}
+    return json.dumps({"examples": items, "texts": _sim_texts(), "model_types": model_types}, ensure_ascii=False)
 
 
 def _schematic(circuit, voltages=None) -> str:
@@ -449,6 +453,12 @@ def sim_run(payload_json: str) -> str:
         except (CircuitError, ValueError, ZeroDivisionError, OverflowError):
             voltages = None
     result["schematic"] = _schematic(circuit, voltages)
+    # for the editor: solved DC voltage of every node, and which grid points form each node
+    result["node_voltages"] = voltages
+    try:
+        result["net_points"] = {name: [list(p) for p in pts] for name, pts in circuit.net_points().items()}
+    except Exception:
+        result["net_points"] = {}
     result["spice"] = circuit.to_spice(name)
     result["circuit"] = circuit.to_dict()
     result["name"] = name

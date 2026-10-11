@@ -57,6 +57,16 @@ export async function launchFirefox({ bin = process.env.FIREFOX || "firefox-esr"
       throw new Error(`timeout waiting for: ${expression}`);
     },
     viewport: (width, height) => send("browsingContext.setViewport", { context, viewport: { width, height } }),
+    /** Real pointer input (mouse or touch): steps like { type: "pointerMove", x, y } in CSS px. */
+    pointer: (steps, pointerType = "mouse") => send("input.performActions", {
+      context, actions: [{ type: "pointer", id: `ptr-${pointerType}`, parameters: { pointerType }, actions: steps }],
+    }),
+    /** Real key presses; WebDriver codes for special keys (e.g. "\uE017" Delete, "\uE009" Control). */
+    keys: (list) => send("input.performActions", {
+      context, actions: [{ type: "key", id: "kbd", actions: list.flatMap((k) => Array.isArray(k)
+        ? [...k.map((v) => ({ type: "keyDown", value: v })), ...[...k].reverse().map((v) => ({ type: "keyUp", value: v }))]
+        : [{ type: "keyDown", value: k }, { type: "keyUp", value: k }]) }],
+    }),
     async screenshot(full = false) {
       const r = await send("browsingContext.captureScreenshot", { context, origin: full ? "document" : "viewport" });
       return Buffer.from(r.data, "base64");
