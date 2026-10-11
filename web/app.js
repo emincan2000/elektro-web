@@ -18,6 +18,25 @@ const UI = {
     homeLead: "elektro komut satırı aracının web arayüzü. Hesaplar elektro'nun kendi Python koduyla, Pyodide sayesinde tamamen senin tarayıcında yapılır; hiçbir veri bir sunucuya gitmez.",
     commands: "komut", start: "Başlamak için soldan bir komut seç ya da birini dene:",
     on: "açık", off: "kapalı", unchanged: "—", menu: "Menü", theme: "Tema", rawValue: "ham değer",
+    simTitle: "Devre simülasyonu",
+    simDesc: "DC, geçici (.tran), AC (.ac) ve DC tarama analizi",
+    simLead: "elektro'nun devre çözücüsü: hazır bir örnek seç, kendi devre dosyanı (elektro tui'den kaydedilmiş .json ya da SPICE netlist) aç veya netlist yaz. Değerleri, analizi ve probe'ları değiştirip yeniden çöz.",
+    openFile: "Dosya aç (.json, .cir…)",
+    schematic: "Şema",
+    parts: "Elemanlar",
+    ref: "Ad",
+    kind: "Tür",
+    value: "Değer",
+    simulate: "Simüle et",
+    simulating: "Simüle ediliyor…",
+    analysisHint: "boş ya da .op: yalnızca DC çalışma noktası · .tran 5m · .ac dec 50 10 1meg · .dc V1 0 5 0.1",
+    netlist: "SPICE netlist",
+    netlistHint: "İlk satır başlıktır (SPICE kuralı). Netlist'teki elemanlar ızgaraya otomatik dizilir ve uçlar düğüm etiketleriyle bağlanır.",
+    applyNetlist: "Netlist'ten devre kur",
+    saveCircuit: "Devre dosyası (.json)",
+    saveNetlist: "Netlist (.cir)",
+    tuiNote: "Yeni bir devre çizmek için: elektro tui → Devre sekmesi; kaydettiğin .json dosyasını burada aç.",
+    noParts: "Devrede eleman yok.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web arayüzünün kaynak kodu", "hesaplar elektro'nun kendi koduyla, Pyodide üzerinde"],
   },
   en: {
@@ -32,6 +51,25 @@ const UI = {
     homeLead: "A web interface for the elektro command line toolkit. Calculations run elektro's own Python code entirely in your browser via Pyodide; nothing is sent to a server.",
     commands: "commands", start: "Pick a command on the left, or try one of these:",
     on: "on", off: "off", unchanged: "—", menu: "Menu", theme: "Theme", rawValue: "raw value",
+    simTitle: "Circuit simulator",
+    simDesc: "DC, transient (.tran), AC (.ac) and DC sweep analysis",
+    simLead: "elektro's circuit solver: pick a ready-made example, open your own circuit file (a .json saved from elektro tui, or a SPICE netlist) or type a netlist. Change values, the analysis and probes, then solve again.",
+    openFile: "Open file (.json, .cir…)",
+    schematic: "Schematic",
+    parts: "Components",
+    ref: "Name",
+    kind: "Type",
+    value: "Value",
+    simulate: "Simulate",
+    simulating: "Simulating…",
+    analysisHint: "empty or .op: DC operating point only · .tran 5m · .ac dec 50 10 1meg · .dc V1 0 5 0.1",
+    netlist: "SPICE netlist",
+    netlistHint: "The first line is the title (SPICE rule). Parts of a netlist are placed on the grid automatically and connected by net labels.",
+    applyNetlist: "Build circuit from netlist",
+    saveCircuit: "Circuit file (.json)",
+    saveNetlist: "Netlist (.cir)",
+    tuiNote: "To draw a new circuit: elektro tui → Circuit tab; then open the saved .json here.",
+    noParts: "The circuit has no components.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web UI source", "calculations by elektro's own code, on Pyodide"],
   },
   de: {
@@ -46,6 +84,25 @@ const UI = {
     homeLead: "Eine Weboberfläche für das Kommandozeilenwerkzeug elektro. Gerechnet wird mit elektros eigenem Python-Code, vollständig im Browser über Pyodide; nichts wird an einen Server gesendet.",
     commands: "Befehle", start: "Wähle links einen Befehl oder probiere einen davon:",
     on: "an", off: "aus", unchanged: "—", menu: "Menü", theme: "Design", rawValue: "Rohwert",
+    simTitle: "Schaltungssimulation",
+    simDesc: "DC-, Transienten- (.tran), AC- (.ac) und DC-Sweep-Analyse",
+    simLead: "Der Schaltungslöser von elektro: Wähle ein fertiges Beispiel, öffne eine eigene Schaltungsdatei (eine mit elektro tui gespeicherte .json oder eine SPICE-Netzliste) oder schreibe eine Netzliste. Werte, Analyse und Messpunkte ändern und neu lösen.",
+    openFile: "Datei öffnen (.json, .cir…)",
+    schematic: "Schaltplan",
+    parts: "Bauteile",
+    ref: "Name",
+    kind: "Typ",
+    value: "Wert",
+    simulate: "Simulieren",
+    simulating: "Simuliere…",
+    analysisHint: "leer oder .op: nur DC-Arbeitspunkt · .tran 5m · .ac dec 50 10 1meg · .dc V1 0 5 0.1",
+    netlist: "SPICE-Netzliste",
+    netlistHint: "Die erste Zeile ist der Titel (SPICE-Regel). Bauteile einer Netzliste werden automatisch im Raster platziert und über Netzlabels verbunden.",
+    applyNetlist: "Schaltung aus Netzliste erstellen",
+    saveCircuit: "Schaltungsdatei (.json)",
+    saveNetlist: "Netzliste (.cir)",
+    tuiNote: "Neue Schaltung zeichnen: elektro tui → Reiter „Schaltung“; die gespeicherte .json dann hier öffnen.",
+    noParts: "Die Schaltung hat keine Bauteile.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "Quellcode der Weboberfläche", "Berechnungen mit elektros eigenem Code, auf Pyodide"],
   },
   ru: {
@@ -60,6 +117,25 @@ const UI = {
     homeLead: "Веб-интерфейс для консольного инструмента elektro. Расчёты выполняет собственный Python-код elektro прямо в браузере через Pyodide; ничего не отправляется на сервер.",
     commands: "команд", start: "Выберите команду слева или попробуйте одну из этих:",
     on: "вкл", off: "выкл", unchanged: "—", menu: "Меню", theme: "Тема", rawValue: "исходное значение",
+    simTitle: "Моделирование схем",
+    simDesc: "Анализ DC, переходный (.tran), AC (.ac) и DC-развёртка",
+    simLead: "Решатель схем elektro: выберите готовый пример, откройте свой файл схемы (.json, сохранённый в elektro tui, или SPICE-нетлист) или напишите нетлист. Меняйте значения, анализ и пробники и решайте заново.",
+    openFile: "Открыть файл (.json, .cir…)",
+    schematic: "Схема",
+    parts: "Компоненты",
+    ref: "Имя",
+    kind: "Тип",
+    value: "Значение",
+    simulate: "Моделировать",
+    simulating: "Моделирование…",
+    analysisHint: "пусто или .op: только рабочая точка DC · .tran 5m · .ac dec 50 10 1meg · .dc V1 0 5 0.1",
+    netlist: "SPICE-нетлист",
+    netlistHint: "Первая строка — заголовок (правило SPICE). Элементы нетлиста автоматически размещаются на сетке и соединяются метками цепей.",
+    applyNetlist: "Собрать схему из нетлиста",
+    saveCircuit: "Файл схемы (.json)",
+    saveNetlist: "Нетлист (.cir)",
+    tuiNote: "Чтобы нарисовать новую схему: elektro tui → вкладка «Схема»; затем откройте сохранённый .json здесь.",
+    noParts: "В схеме нет компонентов.",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "исходный код веб-интерфейса", "расчёты — собственный код elektro на Pyodide"],
   },
 };
@@ -97,6 +173,10 @@ let values = {};             // form values of the current command
 let lastResult = null;
 let busy = false;
 const objectUrls = [];
+let page = "home";           // "home" | "cmd" | "sim"
+let simInfo = null;          // example circuits + elektro's own texts for the simulator page
+let sim = null;              // loaded circuit: { name, circuit, schematic, spice, notes, example, pristine }
+let simResult = null;
 
 function pickLang() {
   const saved = store.get("elektro-web-lang");
@@ -188,6 +268,18 @@ function renderNav() {
   const nav = $("#nav");
   nav.replaceChildren();
   let shown = 0;
+  if (simInfo) {
+    const words = ["sim", "examples", T().simTitle, T().simDesc, simInfo.texts.title, ...simInfo.examples.map((e) => e.title)].join(" ").toLowerCase();
+    if (!q || words.includes(q)) {
+      shown++;
+      nav.append(el("div", { class: "nav-group" },
+        el("h2", { text: T().simTitle }),
+        el("button", {
+          class: "nav-item nav-sim", type: "button", "aria-current": page === "sim" ? "page" : null,
+          onclick: () => { openSim(); toggleMenu(false); },
+        }, el("span", { class: "cmd", text: "sim" }), el("span", { class: "desc", text: T().simDesc }))));
+    }
+  }
   for (const panel of catalog.panels) {
     const items = catalog.commands.filter((c) => c.panel === panel).filter((c) =>
       !q || cmdName(c).includes(q) || c.help.toLowerCase().includes(q) || c.group_help.toLowerCase().includes(q));
@@ -222,6 +314,7 @@ $("#home-link").addEventListener("click", (e) => { e.preventDefault(); goHome();
 
 // ----------------------------------------------------------------- URL state
 function writeHash() {
+  if (page === "sim") { history.replaceState(null, "", simHash()); return; }
   if (!current) { history.replaceState(null, "", location.pathname + location.search); return; }
   const argv = buildArgv(current, values).slice(current.path.length);
   const q = argv.length ? "?" + new URLSearchParams({ a: shellJoin(argv) }) : "";
@@ -231,6 +324,7 @@ function readHash() {
   const h = location.hash.slice(1);
   if (!h) return null;
   const [name, query] = h.split("?");
+  if (name === "sim") return { sim: new URLSearchParams(query || "") };
   const cmd = findCmd(decodeURIComponent(name));
   if (!cmd) return null;
   const args = new URLSearchParams(query || "").get("a");
@@ -242,11 +336,13 @@ addEventListener("hashchange", () => {
   if (!catalog) return;
   const target = readHash();
   if (!target) return goHome();
+  if (target.sim) return openSimFromParams(target.sim);
   selectCommand(target.cmd, target.args ? argvToValues(target.cmd, target.args).values : null, !!target.args);
 });
 
 // ----------------------------------------------------------------- home
 function goHome() {
+  page = "home";
   current = null;
   writeHash();
   renderNav();
@@ -260,7 +356,9 @@ function goHome() {
       manifest && el("span", { class: "badge", text: `elektro ${manifest.elektro}` }),
       el("span", { class: "badge", text: "Pyodide · WebAssembly" })),
     el("p", { text: T().start, style: "margin-top:22px" }),
-    el("div", { class: "home-grid" }, featured.map((c) => el("button", {
+    el("div", { class: "home-grid" }, el("button", {
+      class: "card home-card home-sim", type: "button", onclick: () => openSim(),
+    }, el("div", { class: "cmd", text: `sim · ${T().simTitle}` }), el("div", { class: "desc", text: T().simDesc })), featured.map((c) => el("button", {
       class: "card home-card", type: "button", onclick: () => selectCommand(c),
     }, el("div", { class: "cmd", text: cmdName(c) }), el("div", { class: "desc", text: firstLine(c.help) }))))));
   $("#main").focus({ preventScroll: true });
@@ -274,6 +372,7 @@ function defaultValues(cmd) {
 }
 
 function selectCommand(cmd, initial = null, autorun = false) {
+  page = "cmd";
   current = cmd;
   values = initial ?? defaultValues(cmd);
   lastResult = null;
@@ -399,7 +498,9 @@ function useExample(line) {
 }
 
 document.addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && current) { e.preventDefault(); run(); }
+  if (!(e.ctrlKey || e.metaKey) || e.key !== "Enter") return;
+  if (page === "sim") { e.preventDefault(); simRun(); }
+  else if (current) { e.preventDefault(); run(); }
 });
 
 // ----------------------------------------------------------------- run + results
@@ -429,7 +530,7 @@ async function run() {
   renderResult(lastResult);
 }
 
-function renderResult(r) {
+function renderResult(r, { values: withValues = true } = {}) {
   const t = T();
   objectUrls.splice(0).forEach((u) => URL.revokeObjectURL(u));
   const box = $("#result");
@@ -443,13 +544,18 @@ function renderResult(r) {
       : new Blob([Uint8Array.from(atob(f.base64), (ch) => ch.charCodeAt(0))], { type: f.type });
     const url = URL.createObjectURL(blob);
     objectUrls.push(url);
+    if (f.type !== "image/svg+xml") return el("a", { class: "small-btn", href: url, download: f.name, text: `${t.download} ${f.name}` });
     return el("figure", { class: "plot" },
-      f.type === "image/svg+xml" && el("img", { src: url, alt: f.name }),   // <img> never runs SVG scripts
+      el("img", { src: url, alt: f.name }),   // <img> never runs SVG scripts
       el("div", { class: "plot-bar" }, el("a", { class: "small-btn", href: url, download: f.name, text: `${t.download} ${f.name}` })));
   });
+  const figures = plots.filter((n) => n.tagName === "FIGURE");
+  const fileLinks = plots.filter((n) => n.tagName === "A");
 
   const panels = {
-    out: () => el("div", {}, el("pre", { class: "term" }), plots.length > 0 && el("div", { class: "plots" }, plots)),
+    out: () => el("div", {}, el("pre", { class: "term" }),
+      figures.length > 0 && el("div", { class: "plots" }, figures),
+      fileLinks.length > 0 && el("div", { class: "file-links" }, fileLinks)),
     values: () => valuesView(r.json),
     json: () => el("div", {},
       el("div", { class: "panel-bar" }, el("button", { class: "small-btn", type: "button", text: t.copy,
@@ -457,7 +563,10 @@ function renderResult(r) {
       el("pre", { class: "json", text: JSON.stringify(r.json, null, 2) })),
   };
   const tabs = [["out", t.output]];
-  if (r.json !== null && r.json !== undefined) tabs.push(["values", t.values], ["json", t.json]);
+  if (r.json !== null && r.json !== undefined) {
+    if (withValues) tabs.push(["values", t.values]);
+    tabs.push(["json", t.json]);
+  }
   const panel = el("div", { class: "tab-panel", role: "tabpanel" });
   const show = (key) => {
     panel.replaceChildren(panels[key]());
@@ -522,6 +631,226 @@ async function copy(text, button) {
   } catch { /* clipboard blocked: nothing to do */ }
 }
 
+// ----------------------------------------------------------------- circuit simulator
+// The page edits elektro's own circuit file (the .json `elektro tui` saves) and solves it with
+// `elektro sim`; the schematic is drawn by elektro's own renderer (bridge.sim_*).
+const SIM_DEFAULT = "rc_lowpass";
+const ANALYSIS_PRESETS = [".op", ".tran 5m", ".tran 1u 10m", ".ac dec 50 10 1meg", ".dc V1 0 10 0.1"];
+
+const b64url = (text) => btoa(String.fromCharCode(...new TextEncoder().encode(text)))
+  .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64url = (s) => new TextDecoder().decode(Uint8Array.from(
+  atob(s.replace(/-/g, "+").replace(/_/g, "/")), (ch) => ch.charCodeAt(0)));
+const circuitText = (c) => JSON.stringify(c, null, 2) + "\n";     // the layout elektro writes
+
+function simHash() {
+  if (!sim) return "#sim";
+  const now = JSON.stringify(sim.circuit);
+  if (sim.example && now === sim.pristine) return `#sim?ex=${encodeURIComponent(sim.example)}`;
+  return `#sim?${new URLSearchParams({ n: sim.name, c: b64url(now) })}`;
+}
+
+async function openSimFromParams(params) {
+  const c = params.get("c");
+  if (c) {
+    let text = null;
+    try { text = unb64url(c); } catch { /* broken link: fall back to the default example */ }
+    if (text) return openSim({ source: "json", value: text, name: params.get("n") || "circuit" }, true);
+  }
+  return openSim({ source: "example", value: params.get("ex") || SIM_DEFAULT }, true);
+}
+
+/** Show the simulator; `load` picks a circuit (default: the current one or the RC low-pass). */
+async function openSim(load = null, autorun = false) {
+  page = "sim";
+  current = null;
+  renderNav();
+  $("#main").focus({ preventScroll: true });
+  window.scrollTo({ top: 0 });
+  if (load || !sim) {
+    if (!(await simLoad(load || { source: "example", value: SIM_DEFAULT }))) return;
+    if (autorun || !load) return simRun();
+  }
+  renderSim();
+  if (simResult) renderSimResult();
+}
+
+/** Load a circuit through elektro (example / uploaded file / netlist / .json); false on error. */
+async function simLoad({ source, value, name }) {
+  let r;
+  try {
+    r = await call("simLoad", source, value, name);
+  } catch (err) {
+    r = { ok: false, stderr: String(err.message || err) };
+  }
+  if (!r.ok) {
+    if (!sim) await simLoad({ source: "example", value: SIM_DEFAULT });
+    renderSim();
+    renderResult({ ok: false, stderr: r.stderr, text: "", ansi: "", json: null, files: [] });
+    return false;
+  }
+  sim = { name: r.name, circuit: r.circuit, schematic: r.schematic, spice: r.spice, notes: r.notes,
+    example: source === "example" ? value : null, pristine: JSON.stringify(r.circuit) };
+  simResult = null;
+  renderSim();
+  writeHash();
+  return true;
+}
+
+function simChanged() {
+  writeHash();
+  updateSimCli();
+}
+
+function renderSim() {
+  const t = T(), x = simInfo.texts;
+  const help = x.help.split("\n\n");
+  const groups = [];
+  for (const ex of simInfo.examples) {
+    let g = groups.find((k) => k.title === ex.category_title);
+    if (!g) groups.push(g = { title: ex.category_title, items: [] });
+    g.items.push(ex);
+  }
+  const parts = sim.circuit.components.map((c, i) => ({ c, i })).filter(({ c }) => c.kind in x.kinds);
+  const part = ({ c, i }) => el("tr", { "data-ref": c.ref },
+    el("th", { scope: "row", text: c.ref }),
+    el("td", { class: "kind", text: x.kinds[c.kind] }),
+    el("td", {}, el("input", {
+      type: "text", value: c.value, spellcheck: "false", autocomplete: "off", "aria-label": `${c.ref} ${t.value}`,
+      title: x.hints[c.kind], placeholder: x.hints[c.kind],
+      oninput: (e) => { sim.circuit.components[i].value = e.target.value; e.target.closest("tr").classList.remove("invalid"); simChanged(); },
+    })));
+  const view = $("#view");
+  setKids(view,
+    el("div", { class: "crumb", text: "elektro sim · elektro examples" }),
+    el("h1", { class: "cmd-title", text: t.simTitle }),
+    el("p", { class: "lead", text: t.simLead }),
+    el("p", { class: "help-text", text: help.slice(1).join("\n\n") }),
+    el("div", { class: "sim-examples" },
+      el("div", { class: "label", text: x.examples }),
+      groups.map((g) => el("div", { class: "examples" },
+        el("span", { class: "label", text: `${g.title}:` }),
+        el("div", { class: "chips" }, g.items.map((ex) => el("button", {
+          class: "chip", type: "button", "data-example": ex.name, text: ex.title, title: ex.name,
+          "aria-pressed": String(sim.example === ex.name),
+          onclick: () => simLoad({ source: "example", value: ex.name }).then((ok) => ok && simRun()),
+        })))))),
+    el("div", { class: "sim-tools" },
+      el("label", { class: "small-btn file-btn" }, t.openFile, el("input", {
+        id: "sim-file", type: "file", accept: ".json,.cir,.sp,.spi,.spice,.net,.ckt", class: "visually-hidden",
+        onchange: async (e) => {
+          const f = e.target.files[0];
+          if (!f) return;
+          const path = await call("upload", f.name, await f.arrayBuffer());
+          if (await simLoad({ source: "file", value: path })) simRun();
+        },
+      })),
+      el("span", { class: "hint", text: t.tuiNote })),
+    sim.notes.length > 0 && el("div", { class: "msg warn", text: sim.notes.join("\n") }),
+    el("form", { class: "card sim-card", id: "sim-form", onsubmit: (e) => { e.preventDefault(); simRun(); } },
+      el("div", { class: "sim-head" },
+        el("h2", { text: t.schematic }),
+        el("code", { class: "sim-name", text: `${sim.name}.json` })),
+      el("pre", { class: "term schematic", id: "sim-schematic" }),
+      el("h2", { text: t.parts }),
+      parts.length
+        ? el("div", { class: "values-wrap" }, el("table", { class: "values parts" },
+          el("thead", {}, el("tr", {}, el("th", { text: t.ref }), el("th", { text: t.kind }), el("th", { text: t.value }))),
+          el("tbody", {}, parts.map(part))))
+        : el("p", { class: "no-params", text: t.noParts }),
+      el("div", { class: "fields sim-fields" },
+        el("div", { class: "field" },
+          el("label", { for: "sim-analysis" }, x.analysis, el("span", { class: "opt", text: "-a" })),
+          el("input", {
+            id: "sim-analysis", type: "text", value: sim.circuit.analysis || "", list: "sim-presets",
+            spellcheck: "false", autocomplete: "off", placeholder: ".op",
+            oninput: (e) => { sim.circuit.analysis = e.target.value.trim(); simChanged(); },
+          }),
+          el("datalist", { id: "sim-presets" }, ANALYSIS_PRESETS.map((a) => el("option", { value: a }))),
+          el("div", { class: "hint", text: t.analysisHint })),
+        el("div", { class: "field" },
+          el("label", { for: "sim-probes" }, x.probes, el("span", { class: "opt", text: "-p" })),
+          el("input", {
+            id: "sim-probes", type: "text", value: sim.circuit.probes.join(" "), spellcheck: "false", autocomplete: "off",
+            oninput: (e) => { sim.circuit.probes = e.target.value.split(/\s+/).filter(Boolean); simChanged(); },
+          }),
+          el("div", { class: "hint", text: `${x.probe_hint.replace(/^[^:]*:\s*/, "")} (${t.words})` }))),
+      el("div", { class: "cli" },
+        el("span", { class: "prompt", text: "$" }),
+        el("code", { id: "cli-text" }),
+        el("button", { class: "small-btn", type: "button", text: t.copy, onclick: (e) => copy($("#cli-text").textContent, e.target) })),
+      el("div", { class: "actions" },
+        el("button", { class: "run-btn", type: "submit", id: "run-btn", text: t.simulate }),
+        el("span", { class: "kbd-hint", text: t.ctrlEnter }),
+        el("button", { class: "small-btn", type: "button", id: "sim-save", text: `↓ ${t.saveCircuit}`, title: t.download,
+          onclick: () => saveText(`${sim.name}.json`, circuitText(sim.circuit), "application/json") }),
+        el("button", { class: "small-btn", type: "button", text: `↓ ${t.saveNetlist}`, title: t.download,
+          onclick: () => saveText(`${sim.name}.cir`, sim.spice, "text/plain") }),
+        sim.example && JSON.stringify(sim.circuit) !== sim.pristine && el("button", {
+          class: "ghost-btn", type: "button", text: t.reset,
+          onclick: () => simLoad({ source: "example", value: sim.example }).then((ok) => ok && simRun()),
+        }))),
+    el("details", { class: "card netlist" },
+      el("summary", { text: t.netlist }),
+      el("p", { class: "hint", text: t.netlistHint }),
+      el("textarea", { id: "sim-netlist", rows: "10", spellcheck: "false", autocomplete: "off" }),
+      el("div", { class: "actions" },
+        el("button", { class: "small-btn", type: "button", id: "sim-netlist-apply", text: t.applyNetlist,
+          onclick: () => simLoad({ source: "spice", value: $("#sim-netlist").value, name: sim.name }).then((ok) => ok && simRun()) }))),
+    el("div", { id: "result" }));
+  $("#sim-schematic").innerHTML = ansiToHtml(sim.schematic);
+  $("#sim-netlist").value = sim.spice;
+  updateSimCli();
+}
+
+function updateSimCli() {
+  const code = $("#cli-text");
+  if (!code || !sim) return;
+  const argv = ["elektro", "sim", `${sim.name}.json`, "--plot", `${sim.name}.svg`];
+  if ((sim.circuit.analysis || "").trim()) argv.push("--csv", `${sim.name}.csv`);
+  code.textContent = shellJoin(argv);
+}
+
+function saveText(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = el("a", { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function simRun() {
+  if (busy || !sim || page !== "sim") return;
+  busy = true;
+  const btn = $("#run-btn");
+  btn.disabled = true;
+  btn.textContent = T().simulating;
+  document.querySelectorAll(".parts tr.invalid").forEach((tr) => tr.classList.remove("invalid"));
+  try {
+    simResult = await call("simRun", { name: sim.name, circuit: sim.circuit });
+  } catch (err) {
+    simResult = { ok: false, stderr: String(err.message || err), text: "", ansi: "", json: null, files: [] };
+  } finally {
+    busy = false;
+    btn.disabled = false;
+    btn.textContent = T().simulate;
+  }
+  if (simResult.schematic !== undefined) {
+    sim.schematic = simResult.schematic;
+    sim.spice = simResult.spice;
+    $("#sim-schematic").innerHTML = ansiToHtml(sim.schematic);
+    $("#sim-netlist").value = sim.spice;
+  }
+  renderSimResult();
+}
+
+function renderSimResult() {
+  const r = simResult;
+  for (const ref of r.invalid || []) document.querySelector(`.parts tr[data-ref="${CSS.escape(ref)}"]`)?.classList.add("invalid");
+  renderResult({ text: "", ansi: "", json: null, files: [], ...r }, { values: !Array.isArray(r.json?.x) });
+}
+
 // ----------------------------------------------------------------- language
 $("#lang").addEventListener("change", async (e) => {
   const next = e.target.value;
@@ -532,9 +861,11 @@ $("#lang").addEventListener("change", async (e) => {
   $("#lang").disabled = true;
   try {
     catalog = await call("setLang", lang);
+    simInfo = await call("simInfo");
   } finally {
     $("#lang").disabled = false;
   }
+  if (page === "sim") { renderNav(); renderSim(); if (simResult) simRun(); return; }
   const keep = current && findCmd(cmdName(current));
   if (keep) { current = keep; renderNav(); renderCommand(); if (lastResult) run(); }
   else goHome();
@@ -544,15 +875,18 @@ $("#lang").addEventListener("change", async (e) => {
 applyChrome();
 renderLoading();
 showProgress("python");
-call("init", lang).then((res) => {
+call("init", lang).then(async (res) => {
   catalog = res.catalog;
   manifest = res.manifest;
+  simInfo = await call("simInfo");
   applyChrome();
   $("#loading").hidden = true;
   $("#view").hidden = false;
   renderNav();
   const fromUrl = readHash();
-  if (fromUrl) {
+  if (fromUrl?.sim) {
+    openSimFromParams(fromUrl.sim);
+  } else if (fromUrl) {
     const init = fromUrl.args ? argvToValues(fromUrl.cmd, fromUrl.args).values : null;
     selectCommand(fromUrl.cmd, init, !!fromUrl.args);
   } else {

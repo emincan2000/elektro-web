@@ -236,6 +236,44 @@ form.card { padding: 18px; }
 .a-fg-white[class*="a-bg-"], .a-fg-white[style*="background"],
 .a-fg-bright-white[class*="a-bg-"], .a-fg-bright-white[style*="background"] { color: #fff; }
 
+/* ---------------------------------------------------------------- circuit simulator */
+.sim-examples { margin: 6px 0 10px; }
+.sim-examples > .label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.sim-examples .examples { display: grid; grid-template-columns: 110px 1fr; align-items: baseline; margin: 0 0 6px; }
+.sim-examples .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 600px) {
+  .sim-examples .examples { grid-template-columns: 1fr; gap: 4px; margin-bottom: 10px; }
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); font-weight: 600; }
+.sim-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 4px 0 16px; }
+.sim-tools .hint, .netlist .hint { font-size: 12.5px; color: var(--muted); }
+.file-btn { cursor: pointer; padding: 6px 12px; font-size: 13.5px; }
+.file-btn:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sim-card { padding: 18px; }
+.sim-card h2 { font-size: 15px; margin: 18px 0 8px; }
+.sim-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.sim-head h2 { margin-top: 0; }
+.sim-name { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+.term.schematic { line-height: 1.18; font-size: 13px; width: max-content; max-width: 100%; }
+.parts { max-width: 640px; }
+.parts th[scope="row"] { font-family: var(--mono); color: var(--text); font-size: 13.5px; }
+.parts td { vertical-align: middle; }
+.parts td.kind { color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.parts input { width: 100%; min-width: 120px; font-family: var(--mono); font-size: 13.5px; padding: 5px 8px; }
+.parts tr.invalid input { border-color: var(--err); background: var(--err-bg); }
+.sim-fields { margin-top: 16px; }
+.sim-fields input { font-family: var(--mono); }
+.netlist { margin-top: 14px; padding: 4px 18px; }
+.netlist summary { cursor: pointer; font-weight: 600; padding: 10px 0; }
+.netlist[open] { padding-bottom: 16px; }
+.netlist textarea {
+  width: 100%; font: 13px/1.45 var(--mono); background: var(--term-bg); color: var(--term-text);
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; resize: vertical;
+}
+.netlist textarea:focus { border-color: var(--focus); outline: none; }
+.file-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.home-sim { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: var(--accent-bg); }
+
 /* ---------------------------------------------------------------- home */
 .home h1 { font-size: 28px; margin: 0 0 8px; }
 .home .lead { color: var(--muted); max-width: 680px; }

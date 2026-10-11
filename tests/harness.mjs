@@ -22,5 +22,9 @@ export async function boot(lang = "en") {
     run: (argv) => JSON.parse(bridge.run(JSON.stringify(argv))),
     parseExample: (line) => JSON.parse(bridge.parse_example(line)),
     setLang: (l) => bridge.set_lang(l),
+    addInput: (name, bytes) => bridge.add_input(name, bytes),
+    simInfo: () => JSON.parse(bridge.sim_info()),
+    simLoad: (source, value, name = "circuit") => JSON.parse(bridge.sim_load(source, value, name)),
+    simRun: (payload) => JSON.parse(bridge.sim_run(JSON.stringify(payload))),
   };
 }

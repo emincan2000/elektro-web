@@ -3,6 +3,8 @@
 catalog()   -> every web-usable elektro command with its parameters (for the forms)
 run(argv)   -> runs one command and returns its JSON result, terminal text and errors
 set_lang()  -> re-imports elektro in another language (its help texts are bound at import)
+sim_*()     -> the circuit simulator: example circuits, loading a .json / SPICE file, drawing
+               the schematic with elektro's own renderer and solving it with `elektro sim`
 
 Nothing here re-implements elektro: forms come from its Typer/Click tree and results
 come from its own `--json` output.
@@ -21,7 +23,8 @@ import sys
 # Commands that make no sense in a browser: interactive, stateful, or need the network/disk.
 EXCLUDED = {
     "shell", "tui", "set", "unset", "vars", "history", "language", "languages", "lang",
-    "helpall", "manpage", "update", "datasheet", "sim", "examples",
+    "helpall", "manpage", "update", "datasheet",
+    "sim", "examples",            # these two get their own page (sim_* below)
 }
 
 WORK = "/work"           # cwd for commands; uploaded inputs and produced plots live here
@@ -212,8 +215,8 @@ def _outputs(before: set[str]) -> list[dict]:
         if name.lower().endswith(".svg"):
             found.append({"name": name, "type": "image/svg+xml", "text": data.decode("utf-8", "replace")})
         else:
-            found.append({"name": name, "type": "application/octet-stream",
-                          "base64": base64.b64encode(data).decode()})
+            kind = "text/csv" if name.lower().endswith(".csv") else "application/octet-stream"
+            found.append({"name": name, "type": kind, "base64": base64.b64encode(data).decode()})
     return found
 
 
@@ -232,7 +235,10 @@ def _invoke(argv: list[str]) -> tuple[str, str, int]:
     code = 0
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         try:
-            _app(argv, standalone_mode=False)
+            # without standalone mode click *returns* the code of typer.Exit (elektro's fail())
+            ret = _app(argv, standalone_mode=False)
+            if isinstance(ret, int) and not isinstance(ret, bool):
+                code = ret
         except SystemExit as e:
             code = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
         except Exception as e:  # click usage errors and the like
@@ -280,6 +286,173 @@ def run(argv_json: str) -> str:
         "files": files,
         "argv": argv,
     }, ensure_ascii=False, default=str)
+
+
+
+# ---------------------------------------------------------------- circuit simulator
+# A circuit travels between page and Python as elektro's own file format (Circuit.to_dict),
+# so what the page edits is exactly what `elektro tui` / `elektro sim` read and write.
+
+SIM_KINDS = ("R", "C", "L", "V", "I", "D", "Q", "M", "U")
+
+
+def _sim_texts() -> dict:
+    """elektro's own strings for the simulator page (they follow the language switch)."""
+    from elektro.circuit.devices import models_for
+    from elektro.i18n import t
+    texts = {"title": t("menu.sim"), "examples": t("menu.examples"), "help": _split_help(t("sim.help"))[0],
+             "analysis": t("ckt.analysis"), "probes": t("ckt.probes"), "probe_hint": t("ckt.prompt.probe").split("   (")[0],
+             "source_hint": t("ckt.prompt.source", ref="V", unit="V").split(" — ", 1)[-1],
+             "kinds": {}, "hints": {}}
+    for k in SIM_KINDS:
+        texts["kinds"][k] = t(f"ckt.kind.{k}")
+        if k in ("D", "Q", "M", "U"):
+            hint = t(f"ckt.prompt.model.{k}", ref="", models=" · ".join(models_for(k)))
+            texts["hints"][k] = hint.split(": ", 1)[-1]
+        elif k in ("V", "I"):
+            texts["hints"][k] = texts["source_hint"]
+        else:
+            from elektro.circuit.model import KINDS
+            texts["hints"][k] = t("ckt.prompt.value", ref="", unit=KINDS[k].unit).split(" — ", 1)[-1]
+    return texts
+
+
+def sim_info() -> str:
+    """Example circuits (with their localized titles) and the page's texts."""
+    from elektro.circuit import examples
+    from elektro.i18n import t
+    items = [{"name": k, "category": c, "title": t(f"ex.{k}"), "category_title": t(f"ex.cat.{c}")}
+             for k, (c, _) in examples.EXAMPLES.items()]
+    return json.dumps({"examples": items, "texts": _sim_texts()}, ensure_ascii=False)
+
+
+def _schematic(circuit, voltages=None) -> str:
+    """elektro's schematic renderer (the TUI's circuit view) as ANSI text, cropped to the drawing."""
+    from rich.console import Console
+    from elektro.circuit import probes as prb
+    from elektro.circuit import render as rnd
+    from elektro.circuit.model import parse_addr
+    pts = [p for c in circuit.components for p in c.cells()] + \
+          [p for w in circuit.wires for p in ((w[0], w[1]), (w[2], w[3]))]
+    if not pts:
+        return ""
+    # probe marks, like the editor: ◉ on probed points, underlined parts with a current probe
+    points, parts = set(), set()
+    for expr in circuit.probes:
+        m = prb.PROBE_RE.match(expr)
+        if not m:
+            continue
+        func, a, b = m.group(1).upper(), m.group(2).upper(), m.group(3)
+        if func == "V" or b:
+            for name in (a, b or ""):
+                labels = [c.pins()[0] for c in circuit.components if c.kind == "N" and c.value.upper() == name.upper()]
+                pt = parse_addr(name)
+                points |= set(labels) if labels else ({pt} if pt is not None else set())
+        else:
+            parts.add(a.split(".")[0])
+    parts = {c.ref for c in circuit.components if c.ref.upper() in parts}
+    max_x = max(p[0] for p in pts)
+    max_y = max(p[1] for p in pts)
+    width = rnd.MARGIN_X + (max_x + 8) * rnd.STEP_X
+    height = rnd.MARGIN_Y + (max_y + 2) * rnd.STEP_Y + 1
+    view = rnd.View(0, 0, width, height, None, None, [], voltages or {}, points, parts)
+    lines = rnd.render(circuit, view)
+    # crop: keep the grid one point past the rightmost/lowest drawn character
+    used_col, used_row = 0, 0
+    for r, line in enumerate(lines[rnd.MARGIN_Y:], start=rnd.MARGIN_Y):
+        plain = line.plain.rstrip(" ·")
+        if plain[rnd.MARGIN_X:].strip(" ·"):
+            used_row = r
+            used_col = max(used_col, len(plain))
+    cols = min(width, ((used_col - rnd.MARGIN_X) // rnd.STEP_X + 2) * rnd.STEP_X + rnd.MARGIN_X - 2)
+    rows = min(height, used_row + 2)
+    buf = io.StringIO()
+    con = Console(file=buf, force_terminal=True, color_system="truecolor", width=cols + 2, legacy_windows=False)
+    for line in lines[:rows]:
+        con.print(line[:cols], no_wrap=True, overflow="ignore", crop=False)
+    return buf.getvalue().rstrip()
+
+
+def _circuit_payload(circuit, name: str, notes=()) -> str:
+    return json.dumps({"ok": True, "name": name, "circuit": circuit.to_dict(), "notes": list(notes),
+                       "schematic": _schematic(circuit), "spice": circuit.to_spice(name)}, ensure_ascii=False)
+
+
+def _sim_error(e) -> str:
+    return json.dumps({"ok": False, "stderr": str(e)}, ensure_ascii=False)
+
+
+def sim_load(source: str, value: str, name: str = "circuit") -> str:
+    """source: "example" (value = example name), "file" (value = path from add_input),
+    "spice" (value = netlist text) or "json" (value = circuit file text)."""
+    from elektro.circuit import examples
+    from elektro.circuit.model import Circuit, CircuitError
+    from elektro.circuit.spice import parse_spice
+    try:
+        if source == "example":
+            if value not in examples.EXAMPLES:
+                raise CircuitError(value)
+            return _circuit_payload(examples.build(value), value)
+        if source == "file":
+            from pathlib import Path
+            circuit = Circuit.load(Path(value))
+            return _circuit_payload(circuit, _stem(value), circuit.notes)
+        if source == "spice":
+            circuit, notes = parse_spice(value)
+            # the netlist's title line ("* rc filter") names it; otherwise the given name
+            first = value.split("\n", 1)[0].strip()
+            first = first.lstrip("*").strip() if first.startswith("*") else ""
+            return _circuit_payload(circuit, _stem(first or name), notes)
+        if source == "json":
+            return _circuit_payload(Circuit.from_dict(json.loads(value)), _stem(name))
+    except (CircuitError, ValueError, OSError) as e:
+        return _sim_error(e)
+    return _sim_error(f"unknown source {source!r}")
+
+
+def _stem(name: str) -> str:
+    stem = os.path.splitext(os.path.basename(name or ""))[0]
+    stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", stem).strip("._")
+    return stem or "circuit"
+
+
+def sim_run(payload_json: str) -> str:
+    """Save the circuit as NAME.json and run `elektro sim NAME.json --plot NAME.svg --csv NAME.csv`
+    (the same command a user would type); add the schematic with the solved node voltages."""
+    from elektro.circuit.model import Circuit, CircuitError, valid_value
+    from elektro.circuit.solver import dc_operating_point
+    p = json.loads(payload_json)
+    name = _stem(p.get("name"))
+    try:
+        circuit = Circuit.from_dict(p["circuit"])
+    except (CircuitError, KeyError) as e:
+        return _sim_error(e)
+    bad = [c.ref for c in circuit.components if not valid_value(c.kind, c.value)]
+    if bad:
+        from elektro.i18n import t
+        return json.dumps({"ok": False, "invalid": bad,
+                           "stderr": "\n".join(t("ckt.bad_value", ref=ref) for ref in bad)}, ensure_ascii=False)
+    os.makedirs(WORK, exist_ok=True)
+    path = os.path.join(WORK, name + ".json")
+    circuit.save(path)
+    try:
+        argv = ["sim", name + ".json", "--plot", name + ".svg"]
+        if circuit.analysis.strip():
+            argv += ["--csv", name + ".csv"]
+        result = json.loads(run(json.dumps(argv)))
+    finally:
+        os.remove(path)
+    voltages = None
+    if any(c.kind in ("V", "I") for c in circuit.components):
+        try:
+            voltages = dc_operating_point(circuit).voltages
+        except (CircuitError, ValueError, ZeroDivisionError, OverflowError):
+            voltages = None
+    result["schematic"] = _schematic(circuit, voltages)
+    result["spice"] = circuit.to_spice(name)
+    result["circuit"] = circuit.to_dict()
+    result["name"] = name
+    return json.dumps(result, ensure_ascii=False, default=str)
 
 
 _load(os.environ.get("ELEKTRO_LANG"))

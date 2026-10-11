@@ -44,7 +44,7 @@ try {
   const links = await page.eval(`[...document.querySelectorAll("#foot a")].map((a) => a.href)`);
   check("footer credits elektro's repo and links this source", links.includes("https://github.com/0anes0/elektro") &&
     links.includes("https://github.com/emincan2000/elektro-web"), links.join(" "));
-  const count = await page.eval(`document.querySelectorAll(".nav-item").length`);
+  const count = await page.eval(`document.querySelectorAll(".nav-item:not(.nav-sim)").length`);
   check("sidebar lists all web commands", count === 63, `${count} commands`);
 
   check("open divider from sidebar", await clickNav("divider"));
@@ -115,6 +115,71 @@ try {
   check("error text cannot inject HTML", !injected);
   await shot("06-error");
 
+  // ---- circuit simulator
+  const plotShown = () => page.waitFor(`(() => { const i = document.querySelector("#result .plot img"); return i && i.complete && i.naturalWidth > 0; })()`, 20000);
+  const schematic = () => page.eval(`document.querySelector("#sim-schematic")?.textContent ?? ""`);
+  check("open circuit simulator from sidebar", await clickNav("sim"));
+  await page.waitFor(`!!document.querySelector("#sim-schematic") && !!document.querySelector("#result .result")`, 30000);
+  await plotShown();
+  const lp = await termText();
+  check("simulator opens with the RC low-pass and solves it (Bode plot)", /V\(OUT\)/.test(lp) && (await schematic()).includes("C1 159n"), lp.split("\n")[0]);
+  const csvLinks = await page.eval(`[...document.querySelectorAll("#result .file-links a")].map((a) => a.download).join(",")`);
+  check("sweep curves offered as CSV download", csvLinks === "rc_lowpass.csv", csvLinks);
+  const noValuesTab = await page.eval(`!document.querySelector('#result .tab[data-key="values"]')`);
+  check("no value table for 201-point sweeps (JSON tab instead)", noValuesTab);
+  await shot("11-sim-lowpass", true);
+
+  await page.eval(`document.querySelector('.chip[data-example="divider"]').click() || true`);
+  await page.waitFor(`document.querySelector(".sim-name")?.textContent === "divider.json"`, 15000);
+  await waitResult();
+  check("example chip loads and solves a circuit (divider: OUT = 3.837 V)", /OUT\s+3\.837 V/.test(await termText()));
+  const cliSim = await page.eval(`document.querySelector("#cli-text").textContent`);
+  check("CLI preview shows the matching elektro sim command", cliSim === "elektro sim divider.json --plot divider.svg", cliSim);
+
+  await page.eval(`(() => { const i = document.querySelector('.parts tr[data-ref="R2"] input'); i.value = "1k"; i.dispatchEvent(new Event("input")); document.querySelector("#run-btn").click(); return true; })()`);
+  await page.waitFor(`document.querySelector("#sim-schematic").textContent.includes("R2 1k")`, 15000);
+  await waitResult();
+  check("edited value is solved and drawn (R2 = 1k → 1.091 V)", /OUT\s+1\.091 V/.test(await termText()) && (await schematic()).includes("1.091V"));
+  const simUrl = await page.eval(`location.hash`);
+  check("edited circuit is kept in the URL", simUrl.startsWith("#sim?n=divider&c="), simUrl.slice(0, 40));
+  await shot("12-sim-divider-edited", true);
+
+  await page.eval(`(() => { const i = document.querySelector('.parts tr[data-ref="R1"] input'); i.value = "abc"; i.dispatchEvent(new Event("input")); document.querySelector("#run-btn").click(); return true; })()`);
+  await page.waitFor(`!!document.querySelector(".parts tr.invalid")`, 15000);
+  check("invalid value is flagged on its row with elektro's message", /R1/.test(await errText()), await errText());
+  await page.eval(`(() => { const i = document.querySelector('.parts tr[data-ref="R1"] input'); i.value = "10k"; i.dispatchEvent(new Event("input"));
+    const a = document.querySelector("#sim-analysis"); a.value = ".tran banana"; a.dispatchEvent(new Event("input")); document.querySelector("#run-btn").click(); return true; })()`);
+  await waitResult();
+  check("bad analysis shows elektro's error (as an error, not a warning)", /banana/.test(await errText()), await errText());
+
+  await page.eval(`(() => { document.querySelector("details.netlist").open = true;
+    document.querySelector("#sim-netlist").value = "* rc\\nV1 in 0 PULSE(0 5 0 1u 1u 5m 10m)\\nR1 in out 1k\\nC1 out 0 1u\\n.tran 4m\\n.end\\n";
+    document.querySelector("#sim-netlist-apply").click(); return true; })()`);
+  await page.waitFor(`document.querySelector("#sim-schematic").textContent.includes("◂out")`, 15000);
+  await waitResult();
+  await plotShown();
+  check("SPICE netlist typed on the page is built and solved (.tran)", /\.tran 4m/.test(await termText()) &&
+    (await page.eval(`document.querySelector(".sim-name").textContent`)) === "rc.json", (await termText()).split("\n")[0]);
+  await shot("13-sim-netlist", true);
+
+  const cir = "* bridge\nV1 a 0 10\nR1 a b 1k\nR2 b 0 1k\nR3 a c 2k\nR4 c 0 1k\n.op\n";
+  await page.eval(`(async () => {
+    const input = document.querySelector("#sim-file");
+    const dt = new DataTransfer();
+    dt.items.add(new File([${JSON.stringify(cir)}], "bridge.cir", { type: "text/plain" }));
+    input.files = dt.files;
+    input.dispatchEvent(new Event("change"));
+    return true; })()`);
+  await page.waitFor(`document.querySelector(".sim-name")?.textContent === "bridge.json"`, 15000);
+  await waitResult();
+  check("uploaded SPICE file opens and solves", /3\.333 V/.test(await termText()), (await termText()).split("\n").slice(0, 4).join(" | "));
+
+  await page.goto(`${BASE.split("#")[0]}#sim?ex=rc_charge`);
+  await page.waitFor(`document.querySelector(".sim-name")?.textContent === "rc_charge.json"`, BOOT_MS);
+  await waitResult();
+  await plotShown();
+  check("shareable simulator link opens and solves the example", (await page.eval(`document.querySelector('.chip[aria-pressed="true"]')?.dataset.example`)) === "rc_charge");
+
   // deep link (shareable URL) runs automatically
   await page.goto(`${BASE.split("#")[0]}#ohm?a=${encodeURIComponent("-v 12 -r 4k7")}`);
   await page.waitFor(`!document.querySelector("#view").hidden`, BOOT_MS);
@@ -149,6 +214,16 @@ try {
   const footerOverlap = await page.eval(`(() => { const f = document.querySelector("#foot").getBoundingClientRect(); const r = document.querySelector("#result .result")?.getBoundingClientRect(); return !!r && f.top < r.bottom - 1; })()`);
   check("footer stays below the content", !footerOverlap);
   check("mobile: no horizontal page scroll", !overflow);
+  await page.goto(`${BASE.split("#")[0]}#sim?ex=comparator`);   // same page, new hash: hashchange
+  await page.waitFor(`document.querySelector(".sim-name")?.textContent === "comparator.json"`, BOOT_MS);
+  await waitResult();
+  await plotShown();
+  await page.viewport(390, 844);
+  await new Promise((r) => setTimeout(r, 300));
+  const simOverflow = await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`);
+  check("mobile: simulator page fits (wide schematic scrolls inside its box)", !simOverflow);
+  await shot("14-sim-mobile", true);
+  await page.viewport(1280, 900);
 } catch (err) {
   check("unexpected error", false, err.message);
   try { await shot("99-failure"); } catch { /* ignore */ }

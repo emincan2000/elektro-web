@@ -25,15 +25,21 @@ sent to a server, and no calculation is re-implemented in JavaScript.
   bands included). There is also a value table (SI units) and the raw `--json`.
 * **Graphs.** Filters, charge curves, waveforms and FFT spectra are drawn by elektro's
   built-in SVG plotter and shown inline.
+* **Circuit simulator** (`elektro sim` + `elektro examples`). The 15 example circuits, your
+  own circuit files (the `.json` that `elektro tui` saves, or a SPICE netlist `.cir/.sp/.net`)
+  or a netlist typed on the page. elektro draws the schematic with the solved node voltages.
+  You can edit component values, the analysis (`.op`, `.tran`, `.ac`, `.dc`) and probes, then
+  solve again. Results include the graph and a CSV of the curves, and you can download the
+  circuit as `.json` or `.cir`. Edited circuits travel in the link.
 * **File input** for `fft`: pick a CSV/TXT file; it never leaves your computer.
 * **Shareable links.** The URL holds the command and its arguments
   (e.g. `#divider?a=--vin 12 --vout 3.3`). The page shows the matching CLI command too.
 * English, Turkish, German and Russian (elektro's own translations), light/dark theme,
   works on phones.
 
-Not available in the browser: `shell`, `tui`, `sim`/`examples` (circuit simulator),
-`datasheet` (needs network access to other sites), and the history/variables/settings
-commands.
+Not available in the browser: `shell` and `tui` (interactive terminal apps; to *draw* a new
+circuit use the TUI and open the saved file on the page), `datasheet` (needs network access to
+other sites), and the history/variables/settings commands.
 
 ## How it works
 
@@ -44,6 +50,7 @@ web/worker.js ──────────── Pyodide in a Web Worker (page
         │
 web/bridge.py ──────────── reads elektro's Typer/Click tree → form definitions
                            runs a command twice: --json (data) and plain (terminal table)
+                           simulator: loads/draws circuits, runs `elektro sim` on them
 web/elektro-bundle.zip ─── elektro + the pure-Python packages it imports (2.6 MB)
 ```
 
@@ -76,10 +83,10 @@ make test
 | Test | What it proves |
 |---|---|
 | `test-lib` | form ↔ command-line conversion, ANSI → HTML (incl. no HTML injection), SI units, same-origin rule for `?pyodide=` |
-| `test-pyodide` | every example in elektro's help (151) runs inside Pyodide; each one also survives a round trip through the form (example → form → command line) unchanged |
-| `test-native` | the same 151 examples give the **same results as the installed CLI**: identical terminal text; identical JSON (floats within 1e-9, the WASM vs glibc `libm` difference) |
+| `test-pyodide` | every example in elektro's help (151) runs inside Pyodide; each one also survives a round trip through the form (example → form → command line) unchanged. The simulator: all 15 example circuits, edited values/analysis/probes, a typed netlist, uploaded `.json` and `.cir` files, bad input |
+| `test-native` | the same 151 examples and 22 circuits give the **same results as the installed CLI** (`elektro sim`): identical terminal text; identical JSON (floats within 1e-9, the WASM vs glibc `libm` difference). The example circuits are identical to what `elektro examples` saves |
 | `test-live` | the same browser test against the deployed GitHub Pages site |
-| `test-e2e` | real headless Firefox: boot, sidebar, examples, plots, colours, file upload + FFT, validation, error display, shareable links, language switch, dark theme, mobile layout |
+| `test-e2e` | real headless Firefox: boot, sidebar, examples, plots, colours, file upload + FFT, validation, error display, shareable links, language switch, dark theme, mobile layout; the simulator: examples, editing a value, invalid values, netlist, file upload, CSV download, shareable circuit links |
 
 ## Credits
 
@@ -107,9 +114,13 @@ tarayıcıda yapılır. Kurulum gerekmez, hiçbir veri sunucuya gitmez.
 * **Komutlar:** Tarayıcıda çalışabilen 63 elektro komutu, formları elektro'nun komut
   ağacından otomatik üretilir.
 * **Örnekler:** Yardım metnindeki örnekler tek tıkla çalışır.
+* **Devre simülasyonu:** 15 hazır örnek devre çözülebilir. Kendi devre dosyanı (`elektro tui`'nin
+  kaydettiği .json ya da SPICE netlist) açabilir veya sayfada netlist yazabilirsin. Şemayı
+  elektro kendisi çizer. Eleman değerlerini, analizi ve probe'ları değiştirip yeniden
+  çözebilirsin; grafik ve CSV hazırlanır, devre .json ya da .cir olarak indirilebilir.
 * **Çıktı:** elektro'nun renkli terminal çıktısı, değer tablosu ve JSON.
 * **Grafik ve dosya:** elektro'nun kendi çizdiği grafikler sayfada görünür. FFT için
   dosya yüklenebilir.
 * **Paylaşım ve görünüm:** Paylaşılabilir bağlantılar, 4 dil, açık/koyu tema, mobil
   uyumlu tasarım.
-* **Doğruluk:** 151 örneğin tamamı kurulu elektro ile aynı sonucu verir (`make test`).
+* **Doğruluk:** 151 örneğin ve 22 devrenin tamamı kurulu elektro ile aynı sonucu verir (`make test`).

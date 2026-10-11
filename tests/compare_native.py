@@ -64,6 +64,48 @@ for case in data["cases"]:
         text_diff.append(case["example"])
 shutil.rmtree(work)
 
+# circuit simulator page: the same circuit files solved by `elektro sim`
+sim_diff, sim_fail = [], []
+sim_path = HERE / "out/sim.json"
+sims = json.loads(sim_path.read_text())["cases"] if sim_path.exists() else []
+work = tempfile.mkdtemp(prefix="elektro-native-sim-")
+FIXTURES = set()
+for case in sims:
+    name = case["name"]
+    with open(os.path.join(work, name + ".json"), "w", encoding="utf-8") as f:
+        json.dump(case["circuit"], f, indent=2, ensure_ascii=False)
+    FIXTURES = {name + ".json"}
+    argv = ["sim", name + ".json", "--plot", name + ".svg"] + (["--csv", name + ".csv"] if case["circuit"]["analysis"] else [])
+    j, t = native(argv, work)
+    os.remove(os.path.join(work, name + ".json"))
+    if j.returncode != 0 or t.returncode != 0:
+        sim_fail.append((case["label"], (j.stderr or t.stderr).strip()[:200]))
+        continue
+    nat = json.loads(j.stdout) if j.stdout.strip() else None
+    if not same(nat, case["json"]) or t.stdout.rstrip() != case["text"]:
+        sim_diff.append(case["label"])
+shutil.rmtree(work)
+# example circuits: the page loads exactly what `elektro examples NAME` saves
+ex_diff = []
+work = tempfile.mkdtemp(prefix="elektro-native-ex-")
+for case in sims:
+    if case["label"].startswith("example "):
+        name = case["label"].split(" ", 1)[1]
+        subprocess.run([ELEKTRO, "examples", name, "-o", "c.json"], cwd=work, capture_output=True, check=True)
+        if json.loads(Path(work, "c.json").read_text()) != case["circuit"]:
+            ex_diff.append(name)
+shutil.rmtree(work)
+if sims:
+    m = len(sims)
+    print(f"{m} simulator circuits: JSON + text equal to `elektro sim` {m - len(sim_diff) - len(sim_fail)}/{m}; "
+          f"example circuits identical to `elektro examples` {15 - len(ex_diff)}/15")
+    for e in sim_diff:
+        print("  sim differs:", e)
+    for e, err in sim_fail:
+        print("  native sim failed:", e, "|", err)
+    for e in ex_diff:
+        print("  example circuit differs:", e)
+
 n = len(data["cases"])
 print(f"{n} examples: JSON equal (floats within 1e-9 relative) {n - len(json_diff) - len(failures)}/{n}, "
       f"text identical {n - len(text_diff) - len(failures)}/{n}, native failures {len(failures)}")
@@ -73,4 +115,4 @@ for e in text_diff[:15]:
     print("  text differs:", e)
 for e, err in failures:
     print("  native failed:", e, "|", err)
-sys.exit(1 if json_diff or text_diff or failures else 0)
+sys.exit(1 if json_diff or text_diff or failures or sim_diff or sim_fail or ex_diff else 0)
