@@ -56,6 +56,7 @@ const UI = {
     saveCircuit: "Devre dosyası (.json)",
     saveNetlist: "Netlist (.cir)",
     noParts: "Devrede eleman yok.",
+    expandAll: "Tümünü Aç", collapseAll: "Tümünü Kapat", allFolders: "Kategori Klasörleri", featuredTools: "Öne Çıkan Araçlar", explore: "Klasörü Aç",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web arayüzünün kaynak kodu", "hesaplar elektro'nun kendi koduyla, Pyodide üzerinde"],
   },
   en: {
@@ -106,6 +107,7 @@ const UI = {
     saveCircuit: "Circuit file (.json)",
     saveNetlist: "Netlist (.cir)",
     noParts: "The circuit has no components.",
+    expandAll: "Expand All", collapseAll: "Collapse All", allFolders: "Command Folders", featuredTools: "Featured Tools", explore: "Open Folder",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web UI source", "calculations by elektro's own code, on Pyodide"],
   },
   de: {
@@ -156,6 +158,7 @@ const UI = {
     saveCircuit: "Schaltungsdatei (.json)",
     saveNetlist: "Netzliste (.cir)",
     noParts: "Die Schaltung hat keine Bauteile.",
+    expandAll: "Alle öffnen", collapseAll: "Alle schließen", allFolders: "Kategorie-Ordner", featuredTools: "Beliebte Werkzeuge", explore: "Ordner öffnen",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "Quellcode der Weboberfläche", "Berechnungen mit elektros eigenem Code, auf Pyodide"],
   },
   ru: {
@@ -206,6 +209,7 @@ const UI = {
     saveCircuit: "Файл схемы (.json)",
     saveNetlist: "Нетлист (.cir)",
     noParts: "В схеме нет компонентов.",
+    expandAll: "Развернуть все", collapseAll: "Свернуть все", allFolders: "Папки категорий", featuredTools: "Популярные инструменты", explore: "Открыть папку",
     foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "исходный код веб-интерфейса", "расчёты — собственный код elektro на Pyodide"],
   },
 };
@@ -335,35 +339,96 @@ const cmdName = (c) => c.path.join(" ");
 const firstLine = (s) => (s || "").split("\n")[0].trim();
 const findCmd = (name) => catalog.commands.find((c) => cmdName(c) === name);
 
+function panelIcon(panel) {
+  const p = (panel || "").toLowerCase();
+  if (p.includes("basic") || p.includes("temel") || p.includes("grund") || p.includes("основ")) return "⚡";
+  if (p.includes("passiv") || p.includes("пассив")) return "🎛️";
+  if (p.includes("power") || p.includes("güç") || p.includes("strom") || p.includes("pitani") || p.includes("питани") || p.includes("wiring") || p.includes("kablo")) return "🔌";
+  if (p.includes("install") || p.includes("tesisat") || p.includes("machin") || p.includes("makine") || p.includes("maschin") || p.includes("машин")) return "⚙️";
+  if (p.includes("signal") || p.includes("sinyal") || p.includes("rf") || p.includes("funk") || p.includes("сигнал")) return "📡";
+  if (p.includes("embed") || p.includes("gömülü") || p.includes("встраив")) return "💻";
+  if (p.includes("tool") || p.includes("araç") || p.includes("werkzeug") || p.includes("инструмент")) return "🛠️";
+  return "📁";
+}
+
 function renderNav() {
   const q = $("#search").value.trim().toLowerCase();
   const nav = $("#nav");
   nav.replaceChildren();
+
+  const tb = el("div", { class: "nav-toolbar" },
+    el("button", {
+      type: "button", class: "nav-tool-btn",
+      text: T().expandAll || "Tümünü Aç",
+      onclick: () => {
+        nav.querySelectorAll("details.nav-folder").forEach((d) => { d.open = true; });
+      }
+    }),
+    el("button", {
+      type: "button", class: "nav-tool-btn",
+      text: T().collapseAll || "Tümünü Kapat",
+      onclick: () => {
+        nav.querySelectorAll("details.nav-folder").forEach((d) => { d.open = false; });
+      }
+    })
+  );
+  nav.append(tb);
+
   let shown = 0;
   if (simInfo) {
     const words = ["sim", "examples", T().simTitle, T().simDesc, simInfo.texts.title, ...simInfo.examples.map((e) => e.title)].join(" ").toLowerCase();
     if (!q || words.includes(q)) {
       shown++;
-      nav.append(el("div", { class: "nav-group" },
-        el("h2", { text: T().simTitle }),
-        el("button", {
-          class: "nav-item nav-sim", type: "button", "aria-current": page === "sim" ? "page" : null,
-          onclick: () => { openSim(); toggleMenu(false); },
-        }, el("span", { class: "cmd", text: "sim" }), el("span", { class: "desc", text: T().simDesc }))));
+      nav.append(el("details", { class: "nav-group nav-folder nav-folder-sim", open: true },
+        el("summary", { class: "nav-folder-head" },
+          el("span", { class: "nav-folder-icon", ariaHidden: "true", text: "🔬" }),
+          el("h2", { class: "nav-folder-title", text: T().simTitle }),
+          el("span", { class: "nav-folder-badge", text: "sim" }),
+          el("span", { class: "nav-folder-chevron", ariaHidden: "true", text: "▾" })),
+        el("div", { class: "nav-folder-items" },
+          el("button", {
+            class: "nav-item nav-sim", type: "button", "aria-current": page === "sim" ? "page" : null,
+            onclick: () => { openSim(); toggleMenu(false); },
+          },
+          el("div", { class: "nav-item-body" },
+            el("span", { class: "cmd", text: "sim" }),
+            el("span", { class: "desc", text: T().simDesc })),
+          el("span", { class: "nav-tag", text: "Interactive" })))));
     }
   }
+
   for (const panel of catalog.panels) {
-    const items = catalog.commands.filter((c) => c.panel === panel).filter((c) =>
+    const allPanelItems = catalog.commands.filter((c) => c.panel === panel);
+    const items = allPanelItems.filter((c) =>
       !q || cmdName(c).includes(q) || c.help.toLowerCase().includes(q) || c.group_help.toLowerCase().includes(q));
     if (!items.length) continue;
     shown += items.length;
-    nav.append(el("div", { class: "nav-group" },
-      el("h2", { text: panel || "elektro" }),
-      items.map((c) => el("button", {
-        class: "nav-item", type: "button",
-        "aria-current": current && cmdName(current) === cmdName(c) ? "page" : null,
-        onclick: () => { selectCommand(c); toggleMenu(false); },
-      }, el("span", { class: "cmd", text: cmdName(c) }), el("span", { class: "desc", text: firstLine(c.help) })))));
+
+    const hasActive = current && items.some((c) => cmdName(current) === cmdName(c));
+    const isFolderOpen = Boolean(q || hasActive || true);
+
+    nav.append(el("details", {
+      class: `nav-group nav-folder${hasActive ? " has-active" : ""}`,
+      open: isFolderOpen,
+      "data-panel": panel || "elektro"
+    },
+      el("summary", { class: "nav-folder-head" },
+        el("span", { class: "nav-folder-icon", ariaHidden: "true", text: panelIcon(panel) }),
+        el("h2", { class: "nav-folder-title", text: panel || "elektro" }),
+        el("span", { class: "nav-folder-badge", text: String(items.length) }),
+        el("span", { class: "nav-folder-chevron", ariaHidden: "true", text: "▾" })),
+      el("div", { class: "nav-folder-items" },
+        items.map((c) => {
+          const isActive = current && cmdName(current) === cmdName(c);
+          return el("button", {
+            class: `nav-item${isActive ? " active" : ""}`, type: "button",
+            "aria-current": isActive ? "page" : null,
+            onclick: () => { selectCommand(c); toggleMenu(false); },
+          },
+          el("div", { class: "nav-item-body" },
+            el("span", { class: "cmd", text: cmdName(c) }),
+            el("span", { class: "desc", text: firstLine(c.help) })));
+        }))));
   }
   if (!shown) nav.append(el("p", { class: "nav-empty", text: T().noMatch }));
 }
@@ -419,20 +484,85 @@ function goHome() {
   writeHash();
   renderNav();
   const view = $("#view");
+  const t = T();
   const featured = FEATURED.map(findCmd).filter(Boolean);
+
+  // Group commands by panel for Category Folder cards
+  const panelCards = catalog.panels.map((p) => {
+    const cmds = catalog.commands.filter((c) => c.panel === p);
+    return el("div", { class: "card home-folder-card" },
+      el("div", { class: "home-folder-head" },
+        el("span", { class: "home-folder-icon", ariaHidden: "true", text: panelIcon(p) }),
+        el("div", { class: "home-folder-info" },
+          el("h3", { class: "home-folder-title", text: p }),
+          el("span", { class: "home-folder-meta", text: `${cmds.length} ${t.commands}` })),
+        el("button", {
+          class: "small-btn home-folder-open",
+          type: "button",
+          text: t.explore || "Klasörü Aç",
+          onclick: () => {
+            const folder = $(`details.nav-folder[data-panel="${CSS.escape(p)}"]`);
+            if (folder) {
+              folder.open = true;
+              folder.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            if (cmds[0]) selectCommand(cmds[0]);
+          }
+        })),
+      el("div", { class: "home-folder-chips" },
+        cmds.slice(0, 4).map((c) => el("button", {
+          class: "chip", type: "button", text: cmdName(c), onclick: () => selectCommand(c)
+        }))));
+  });
+
   setKids(view, el("div", { class: "home" },
-    el("h1", { text: T().homeTitle }),
-    el("p", { class: "lead", text: T().homeLead }),
-    el("div", { class: "badges" },
-      el("span", { class: "badge", text: `${catalog.commands.length} ${T().commands}` }),
-      manifest && el("span", { class: "badge", text: `elektro ${manifest.elektro}` }),
-      el("span", { class: "badge", text: "Pyodide · WebAssembly" })),
-    el("p", { text: T().start, style: "margin-top:22px" }),
-    el("div", { class: "home-grid" }, el("button", {
-      class: "card home-card home-sim", type: "button", onclick: () => openSim(),
-    }, el("div", { class: "cmd", text: `sim · ${T().simTitle}` }), el("div", { class: "desc", text: T().simDesc })), featured.map((c) => el("button", {
-      class: "card home-card", type: "button", onclick: () => selectCommand(c),
-    }, el("div", { class: "cmd", text: cmdName(c) }), el("div", { class: "desc", text: firstLine(c.help) }))))));
+    el("div", { class: "home-hero" },
+      el("div", { class: "hero-badge" },
+        el("span", { class: "bolt", text: "⚡" }),
+        el("span", { text: "WebAssembly + Pyodide Powered · Local & Private" })),
+      el("h1", { text: t.homeTitle }),
+      el("p", { class: "lead", text: t.homeLead }),
+      el("div", { class: "badges" },
+        el("span", { class: "badge", text: `${catalog.commands.length} ${t.commands}` }),
+        manifest ? el("span", { class: "badge", text: `elektro v${manifest.elektro}` }) : false,
+        el("span", { class: "badge", text: "Pyodide · WebAssembly" }),
+        el("span", { class: "badge", text: `${catalog.panels.length} Kategori Klasörü` }),
+        el("span", { class: "badge", text: "15+ Devre Simülasyonu" }))),
+
+    // Circuit Simulator Hero Spotlight
+    el("div", { class: "card home-sim-spotlight", onclick: () => openSim() },
+      el("div", { class: "sim-spotlight-left" },
+        el("span", { class: "spotlight-pill", text: "Interactive Tool" }),
+        el("h2", { text: `🔬 ${t.simTitle}` }),
+        el("p", { text: t.simLead || t.simDesc }),
+        el("div", { class: "spotlight-tags" },
+          el("span", { class: "badge", text: "DC Operating Point" }),
+          el("span", { class: "badge", text: "Transient (.tran)" }),
+          el("span", { class: "badge", text: "AC Frequency (.ac)" }),
+          el("span", { class: "badge", text: "SPICE Netlist" }),
+          el("span", { class: "badge", text: "Şema Çizici" }))),
+      el("button", { class: "run-btn spotlight-btn", type: "button", text: t.simulate || "Simülatörü Aç" })),
+
+    // Category Folders Section
+    el("div", { class: "home-section" },
+      el("div", { class: "section-head" },
+        el("h2", { text: `📁 ${t.allFolders || "Kategori Klasörleri"}` }),
+        el("p", { class: "section-desc", text: "Tüm mühendislik araçları çalışma alanlarına göre klasörlendi." })),
+      el("div", { class: "home-folders-grid" }, panelCards)),
+
+    // Featured Tools Section (Keeps .home-grid, .home-card, .home-sim for backward compatibility & e2e)
+    el("div", { class: "home-section" },
+      el("div", { class: "section-head" },
+        el("h2", { text: `⚡ ${t.featuredTools || "Öne Çıkan Araçlar"}` }),
+        el("p", { class: "section-desc", text: t.start })),
+      el("div", { class: "home-grid" },
+        el("button", {
+          class: "card home-card home-sim", type: "button", onclick: () => openSim(),
+        }, el("div", { class: "cmd", text: `sim · ${t.simTitle}` }), el("div", { class: "desc", text: t.simDesc })),
+        featured.map((c) => el("button", {
+          class: "card home-card", type: "button", onclick: () => selectCommand(c),
+        }, el("div", { class: "cmd", text: cmdName(c) }), el("div", { class: "desc", text: firstLine(c.help) })))))));
+
   $("#main").focus({ preventScroll: true });
 }
 
@@ -449,6 +579,8 @@ function selectCommand(cmd, initial = null, autorun = false) {
   values = initial ?? defaultValues(cmd);
   lastResult = null;
   renderNav();
+  const folder = $(`details.nav-folder[data-panel="${CSS.escape(cmd.panel || "elektro")}"]`);
+  if (folder) folder.open = true;
   renderCommand();
   writeHash();
   $("#main").focus({ preventScroll: true });
@@ -526,7 +658,12 @@ function renderCommand() {
   const desc = c.help.split("\n");
   const view = $("#view");
   setKids(view,
-    el("div", { class: "crumb", text: c.panel }),
+    el("div", { class: "crumb" },
+      el("span", { class: "crumb-icon", ariaHidden: "true", text: panelIcon(c.panel) }),
+      ` ${c.panel} `,
+      el("span", { class: "crumb-sep", text: "›" }),
+      ` `,
+      el("span", { class: "crumb-current", text: cmdName(c) })),
     el("h1", { class: "cmd-title", text: cmdName(c) }),
     el("p", { class: "lead", text: desc[0] }),
     desc.length > 1 && el("p", { class: "help-text", text: desc.slice(1).join("\n").trim() }),
