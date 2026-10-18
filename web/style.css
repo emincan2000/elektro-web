@@ -662,10 +662,26 @@ form.card { padding: 22px; }
 /* ---------------------------------------------------------------- circuit simulator */
 .sim-examples { margin: 6px 0 10px; }
 .sim-examples > .label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-.sim-examples .examples { display: grid; grid-template-columns: 110px 1fr; align-items: baseline; margin: 0 0 6px; }
-.sim-examples .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-@media (max-width: 600px) {
-  .sim-examples .examples { grid-template-columns: 1fr; gap: 4px; margin-bottom: 10px; }
+.sim-examples { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 6px; }
+.sim-examples > .label { grid-column: 1 / -1; }
+.ex-group { border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--panel); min-width: 0; }
+.ex-group[open] { grid-column: 1 / -1; }      /* the open folder spans the row, closed ones sit two by two */
+.ex-group > summary {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+  padding: 7px 12px; font-size: 13.5px; font-weight: 600; color: var(--text);
+}
+.ex-group > summary::-webkit-details-marker { display: none; }
+.ex-group > summary::before { content: "▸"; color: var(--muted); font-size: 11px; transition: transform 0.15s ease; }
+.ex-group[open] > summary::before { transform: rotate(90deg); }
+.ex-group > summary:hover { color: var(--accent-strong); }
+.ex-group-count {
+  font-size: 11px; font-weight: 600; color: var(--muted); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: 0 7px;
+}
+.ex-group .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 12px 12px; }
+.sim-desc {
+  margin: 0 0 12px; padding: 10px 14px; font-size: 14px; line-height: 1.5; color: var(--text);
+  background: var(--accent-bg); border-left: 3px solid var(--accent); border-radius: var(--radius-sm);
 }
 .sim-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 4px 0 16px; }
 .sim-tools .hint, .netlist .hint { font-size: 12.5px; color: var(--muted); }
@@ -825,6 +841,20 @@ form.card { padding: 22px; }
 .spotlight-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .spotlight-btn { flex-shrink: 0; padding: 12px 28px; }
 
+/* Terminal version (elektro CLI) */
+.home-cli {
+  padding: 18px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px 24px; flex-wrap: wrap;
+}
+.home-cli-text { flex: 1 1 320px; min-width: 0; }
+.home-cli h2 { margin: 0 0 4px; font-size: 17px; color: var(--text); }
+.home-cli p { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 560px; }
+.home-cli-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: 0 1 auto; min-width: 0; }
+.home-cli .cli { margin-top: 0; max-width: 100%; }
+.home-cli-link { font-size: 13px; font-weight: 600; color: var(--accent-strong); text-decoration: none; }
+.home-cli-link:hover { text-decoration: underline; }
+
 /* Sections */
 .home-section { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
 .section-head h2 { font-size: 19px; font-weight: 700; margin: 0 0 4px; color: var(--text); }
@@ -908,4 +938,5 @@ form.card { padding: 22px; }
   main { padding-top: 18px; }
   .cmd-title { font-size: 22px; }
   .home-sim-spotlight { flex-direction: column; align-items: flex-start; }
+  .home-cli-actions { align-items: stretch; width: 100%; }
 }

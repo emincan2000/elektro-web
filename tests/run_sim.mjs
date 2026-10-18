@@ -23,7 +23,9 @@ function solve(label, loaded, edit = (c) => c) {
   return r;
 }
 
-check("15 example circuits listed with titles", info.examples.length === 15 && info.examples.every((x) => x.title && x.category_title));
+check(`${info.examples.length} example circuits listed with titles`, info.examples.length >= 15 && info.examples.every((x) => x.title && x.category_title));
+check("example circuits come with elektro's explanation", info.examples.every((x) => typeof x.desc === "string") &&
+  !!info.examples.find((x) => x.name === "rc_lowpass")?.desc);
 check("elektro's own texts for the page", info.texts.kinds.R === "resistor" && info.texts.hints.D.includes("1N4148"));
 
 for (const ex of info.examples) {
