@@ -318,12 +318,26 @@ def _sim_texts() -> dict:
     return texts
 
 
+def _example_items() -> list:
+    """Example circuits with localized titles, grouped by folder (in elektro's menu order)."""
+    from elektro.circuit import examples
+    if not hasattr(examples, "REGISTRY"):          # elektro < 0.7.1: flat EXAMPLES dict
+        from elektro.i18n import t
+        return [{"name": k, "category": c, "title": t(f"ex.{k}"), "category_title": t(f"ex.cat.{c}"), "desc": ""}
+                for k, (c, _) in examples.EXAMPLES.items()]
+    items = []
+    for path, keys in examples.tree():             # "opamp/amps" → "Op-amps / Amplifiers"
+        parts = path.split("/")
+        prefixes = ["/".join(parts[:i + 1]) for i in range(len(parts))]
+        category_title = " / ".join(examples.folder_name(p) for p in prefixes if p in examples.FOLDERS)
+        items += [{"name": k, "category": path, "title": examples.title(k), "category_title": category_title,
+                   "desc": examples.description(k)} for k in keys]
+    return items
+
+
 def sim_info() -> str:
     """Example circuits (with their localized titles) and the page's texts."""
-    from elektro.circuit import examples
-    from elektro.i18n import t
-    items = [{"name": k, "category": c, "title": t(f"ex.{k}"), "category_title": t(f"ex.cat.{c}")}
-             for k, (c, _) in examples.EXAMPLES.items()]
+    items = _example_items()
     from elektro.circuit.devices import LIBRARY
     # the editor draws NPN/PNP and N/P-channel symbols from the part's model
     model_types = {name: typ for name, (typ, _) in LIBRARY.items()}
@@ -394,7 +408,7 @@ def sim_load(source: str, value: str, name: str = "circuit") -> str:
     from elektro.circuit.spice import parse_spice
     try:
         if source == "example":
-            if value not in examples.EXAMPLES:
+            if value not in examples.names():
                 raise CircuitError(value)
             return _circuit_payload(examples.build(value), value)
         if source == "file":

@@ -549,7 +549,7 @@ function goHome() {
         manifest ? el("span", { class: "badge", text: `elektro v${manifest.elektro}` }) : false,
         el("span", { class: "badge", text: "Pyodide · WebAssembly" }),
         el("span", { class: "badge", text: `${catalog.panels.length} Kategori Klasörü` }),
-        el("span", { class: "badge", text: "15+ Devre Simülasyonu" }))),
+        el("span", { class: "badge", text: `${simInfo?.examples.length ?? "15+"} Örnek Devre` }))),
 
     // The same toolkit as a terminal program: install command + link to its repository
     homeCli(t),
@@ -938,6 +938,9 @@ function simChanged() {
   updateSimCli();
 }
 
+/** elektro's short explanation of the loaded example circuit ("" for own circuits / older elektro). */
+const exampleDesc = () => (sim.example && simInfo.examples.find((e) => e.name === sim.example)?.desc) || "";
+
 function renderSim() {
   const t = T(), x = simInfo.texts;
   const help = x.help.split("\n\n");
@@ -954,11 +957,14 @@ function renderSim() {
     el("p", { class: "lead", text: t.simLead }),
     el("p", { class: "help-text", text: help.slice(1).join("\n\n") }),
     el("div", { class: "sim-examples" },
-      el("div", { class: "label", text: x.examples }),
-      groups.map((g) => el("div", { class: "examples" },
-        el("span", { class: "label", text: `${g.title}:` }),
+      el("div", { class: "label", text: `${x.examples} (${simInfo.examples.length})` }),
+      // one folder per category, like `elektro examples`; the current example's folder starts open
+      groups.map((g) => el("details", { class: "ex-group", open: g.items.some((ex) => ex.name === sim.example) },
+        el("summary", {},
+          el("span", { class: "ex-group-title", text: g.title }),
+          el("span", { class: "ex-group-count", text: String(g.items.length) })),
         el("div", { class: "chips" }, g.items.map((ex) => el("button", {
-          class: "chip", type: "button", "data-example": ex.name, text: ex.title, title: ex.name,
+          class: "chip", type: "button", "data-example": ex.name, text: ex.title, title: ex.desc || ex.name,
           "aria-pressed": String(sim.example === ex.name),
           onclick: () => simLoad({ source: "example", value: ex.name }).then((ok) => ok && simRun()),
         })))))),
@@ -985,6 +991,7 @@ function renderSim() {
             type: "button", role: "tab", class: "seg-btn", "data-view": k, text: label, "aria-selected": String(simView === k),
             onclick: () => { simView = k; showSimView(); },
           })))),
+      exampleDesc() && el("p", { class: "sim-desc", text: exampleDesc() }),
       el("div", { id: "sim-editor" }),
       el("pre", { class: "term schematic", id: "sim-schematic" }),
       el("h2", { text: t.parts }),
@@ -1038,6 +1045,7 @@ function renderSim() {
         sim.name = "circuit";
         sim.example = null;
         $(".sim-name").textContent = "circuit.json";
+        $(".sim-desc")?.remove();
         document.querySelectorAll(".chip[data-example]").forEach((b) => b.setAttribute("aria-pressed", "false"));
       }
       renderParts();
