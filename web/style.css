@@ -825,6 +825,20 @@ form.card { padding: 22px; }
 .spotlight-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .spotlight-btn { flex-shrink: 0; padding: 12px 28px; }
 
+/* Terminal version (elektro CLI) */
+.home-cli {
+  padding: 18px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px 24px; flex-wrap: wrap;
+}
+.home-cli-text { flex: 1 1 320px; min-width: 0; }
+.home-cli h2 { margin: 0 0 4px; font-size: 17px; color: var(--text); }
+.home-cli p { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 560px; }
+.home-cli-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: 0 1 auto; min-width: 0; }
+.home-cli .cli { margin-top: 0; max-width: 100%; }
+.home-cli-link { font-size: 13px; font-weight: 600; color: var(--accent-strong); text-decoration: none; }
+.home-cli-link:hover { text-decoration: underline; }
+
 /* Sections */
 .home-section { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
 .section-head h2 { font-size: 19px; font-weight: 700; margin: 0 0 4px; color: var(--text); }
@@ -908,4 +922,5 @@ form.card { padding: 22px; }
   main { padding-top: 18px; }
   .cmd-title { font-size: 22px; }
   .home-sim-spotlight { flex-direction: column; align-items: flex-start; }
+  .home-cli-actions { align-items: stretch; width: 100%; }
 }

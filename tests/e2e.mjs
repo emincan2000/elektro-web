@@ -44,6 +44,8 @@ try {
   const links = await page.eval(`[...document.querySelectorAll("#foot a")].map((a) => a.href)`);
   check("footer credits elektro's repo and links this source", links.includes("https://github.com/0anes0/elektro") &&
     links.includes("https://github.com/emincan2000/elektro-web"), links.join(" "));
+  const cliCard = await page.eval(`[document.querySelector(".home-cli code")?.textContent, document.querySelector(".home-cli a")?.href].join(" ")`);
+  check("home points to the terminal version", cliCard === "pipx install elektro-cli https://github.com/0anes0/elektro", cliCard);
   const count = await page.eval(`document.querySelectorAll(".nav-item:not(.nav-sim)").length`);
   check("sidebar lists all web commands", count === 63, `${count} commands`);
 

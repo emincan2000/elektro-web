@@ -57,7 +57,8 @@ const UI = {
     saveNetlist: "Netlist (.cir)",
     noParts: "Devrede eleman yok.",
     expandAll: "Tümünü Aç", collapseAll: "Tümünü Kapat", allFolders: "Kategori Klasörleri", featuredTools: "Öne Çıkan Araçlar", explore: "Klasörü Aç",
-    foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web arayüzünün kaynak kodu", "hesaplar elektro'nun kendi koduyla, Pyodide üzerinde"],
+    cliTitle: "💻 Terminalde de kullan", cliLead: "Aynı komutlar terminalde de çalışır; üstüne TUI, devre editörü, datasheet indirici ve geçmiş gelir.", cliRepo: "GitHub'da elektro →",
+    foot: ["elektro CLI", "© Ahmet Enes Kaymak (GPLv3)", "web arayüzünün kaynak kodu", "hesaplar elektro'nun kendi koduyla, Pyodide üzerinde"],
   },
   en: {
     loading: ["Loading Python (Pyodide)", "Preparing packages", "Loading elektro"],
@@ -108,7 +109,8 @@ const UI = {
     saveNetlist: "Netlist (.cir)",
     noParts: "The circuit has no components.",
     expandAll: "Expand All", collapseAll: "Collapse All", allFolders: "Command Folders", featuredTools: "Featured Tools", explore: "Open Folder",
-    foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "web UI source", "calculations by elektro's own code, on Pyodide"],
+    cliTitle: "💻 Use it in your terminal", cliLead: "The same commands run in your terminal too, plus the TUI, circuit editor, datasheet downloader and history.", cliRepo: "elektro on GitHub →",
+    foot: ["elektro CLI", "© Ahmet Enes Kaymak (GPLv3)", "web UI source", "calculations by elektro's own code, on Pyodide"],
   },
   de: {
     loading: ["Python (Pyodide) wird geladen", "Pakete werden vorbereitet", "elektro wird geladen"],
@@ -159,7 +161,8 @@ const UI = {
     saveNetlist: "Netzliste (.cir)",
     noParts: "Die Schaltung hat keine Bauteile.",
     expandAll: "Alle öffnen", collapseAll: "Alle schließen", allFolders: "Kategorie-Ordner", featuredTools: "Beliebte Werkzeuge", explore: "Ordner öffnen",
-    foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "Quellcode der Weboberfläche", "Berechnungen mit elektros eigenem Code, auf Pyodide"],
+    cliTitle: "💻 Auch im Terminal", cliLead: "Dieselben Befehle laufen auch im Terminal – dazu TUI, Schaltungseditor, Datenblatt-Downloader und Verlauf.", cliRepo: "elektro auf GitHub →",
+    foot: ["elektro CLI", "© Ahmet Enes Kaymak (GPLv3)", "Quellcode der Weboberfläche", "Berechnungen mit elektros eigenem Code, auf Pyodide"],
   },
   ru: {
     loading: ["Загрузка Python (Pyodide)", "Подготовка пакетов", "Загрузка elektro"],
@@ -210,7 +213,8 @@ const UI = {
     saveNetlist: "Нетлист (.cir)",
     noParts: "В схеме нет компонентов.",
     expandAll: "Развернуть все", collapseAll: "Свернуть все", allFolders: "Папки категорий", featuredTools: "Популярные инструменты", explore: "Открыть папку",
-    foot: ["elektro", "© Ahmet Enes Kaymak (GPLv3)", "исходный код веб-интерфейса", "расчёты — собственный код elektro на Pyodide"],
+    cliTitle: "💻 Также в терминале", cliLead: "Те же команды работают и в терминале — плюс TUI, редактор схем, загрузчик даташитов и история.", cliRepo: "elektro на GitHub →",
+    foot: ["elektro CLI", "© Ahmet Enes Kaymak (GPLv3)", "исходный код веб-интерфейса", "расчёты — собственный код elektro на Pyodide"],
   },
 };
 
@@ -308,7 +312,7 @@ function applyChrome() {
   $("#theme-btn").setAttribute("aria-label", T().theme);
   const [name, author, source, how] = T().foot;
   setKids($("#foot"),
-    el("a", { href: "https://github.com/0anes0/elektro", text: name, rel: "noopener" }), ` ${author}`,
+    el("a", { href: CLI_REPO, text: name, rel: "noopener" }), ` ${author}`,
     manifest ? ` · v${manifest.elektro}` : "", " · ", how, " · ",
     el("a", { href: "https://github.com/emincan2000/elektro-web", text: source, rel: "noopener" }));
 }
@@ -478,6 +482,24 @@ addEventListener("hashchange", () => {
 });
 
 // ----------------------------------------------------------------- home
+const CLI_REPO = "https://github.com/0anes0/elektro";
+const CLI_INSTALL = "pipx install elektro-cli";
+
+function homeCli(t) {
+  const btn = el("button", { class: "small-btn", type: "button", text: t.copy });
+  btn.addEventListener("click", () => copy(CLI_INSTALL, btn));
+  return el("div", { class: "card home-cli" },
+    el("div", { class: "home-cli-text" },
+      el("h2", { text: t.cliTitle }),
+      el("p", { text: t.cliLead })),
+    el("div", { class: "home-cli-actions" },
+      el("div", { class: "cli" },
+        el("span", { class: "prompt", text: "$" }),
+        el("code", { text: CLI_INSTALL }),
+        btn),
+      el("a", { class: "home-cli-link", href: CLI_REPO, target: "_blank", rel: "noopener", text: t.cliRepo })));
+}
+
 function goHome() {
   page = "home";
   current = null;
@@ -528,6 +550,9 @@ function goHome() {
         el("span", { class: "badge", text: "Pyodide · WebAssembly" }),
         el("span", { class: "badge", text: `${catalog.panels.length} Kategori Klasörü` }),
         el("span", { class: "badge", text: "15+ Devre Simülasyonu" }))),
+
+    // The same toolkit as a terminal program: install command + link to its repository
+    homeCli(t),
 
     // Circuit Simulator Hero Spotlight
     el("div", { class: "card home-sim-spotlight", onclick: () => openSim() },
